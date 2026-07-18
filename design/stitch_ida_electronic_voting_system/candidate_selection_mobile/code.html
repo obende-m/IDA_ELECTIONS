@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Candidate Selection | IDA Election Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#b2b3af",
+                        "secondary": "#5e5e5e",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#d4af37",
+                        "inverse-primary": "#e9c349",
+                        "inverse-surface": "#313030",
+                        "secondary-fixed": "#e2e2e2",
+                        "inverse-on-surface": "#f3f0ef",
+                        "tertiary": "#5d5f5b",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#e3e3de",
+                        "on-tertiary-fixed": "#1a1c19",
+                        "on-surface-variant": "#4d4635",
+                        "outline-variant": "#d0c5af",
+                        "primary": "#735c00",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-background": "#1c1b1b",
+                        "surface-bright": "#fcf9f8",
+                        "on-primary-fixed": "#241a00",
+                        "background": "#fcf9f8",
+                        "surface-container-high": "#eae7e7",
+                        "surface-container-highest": "#e5e2e1",
+                        "secondary-container": "#e2e2e2",
+                        "surface": "#fcf9f8",
+                        "surface-container": "#f0eded",
+                        "outline": "#7f7663",
+                        "on-secondary-fixed": "#1b1b1b",
+                        "tertiary-fixed-dim": "#c6c7c2",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-fixed-dim": "#c6c6c6",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#444542",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#474747",
+                        "on-secondary-container": "#646464",
+                        "surface-tint": "#735c00",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#ffe088",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f6f3f2",
+                        "primary-fixed-dim": "#e9c349",
+                        "on-tertiary-fixed-variant": "#454744",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e5e2e1",
+                        "on-primary-container": "#554300",
+                        "on-surface": "#1c1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "32px",
+                        "container-max": "1280px",
+                        "base": "8px",
+                        "margin-desktop": "64px",
+                        "margin-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .candidate-card-selected { border: 4px solid #D4AF37 !important; }
+        .transition-all { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation Header -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-surface border-b-2 border-on-background">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-high hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">IDA Election Portal</span>
+</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined p-2 text-secondary">notifications</span>
+<span class="material-symbols-outlined p-2 text-secondary">account_circle</span>
+</div>
+</header>
+<main class="mt-16 mb-24 px-6 py-8 flex-grow max-w-lg mx-auto w-full">
+<!-- Progress Indicator -->
+<div class="mb-8">
+<div class="flex justify-between items-end mb-2">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-background">Select Candidate for Chairman</h1>
+<span class="font-label-md text-label-md text-secondary">1 of 12</span>
+</div>
+<div class="h-1 bg-surface-container-highest w-full overflow-hidden">
+<div class="h-full bg-primary-container w-[8.33%]"></div>
+</div>
+</div>
+<!-- Verification Chip -->
+<div class="mb-6 flex items-center gap-2">
+<div class="bg-primary-container px-3 py-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-on-primary-container font-bold">Secure Voting Protocol Active</span>
+</div>
+</div>
+<!-- Candidate Cards Container -->
+<div class="space-y-6">
+<!-- Candidate 1 -->
+<div class="candidate-card bg-surface border-2 border-on-background flex flex-col transition-all cursor-pointer group" onclick="selectCandidate(this)">
+<div class="relative w-full h-72">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a dignified Nigerian elder male candidate for a leadership position. He wears a formal traditional outfit in clean white fabric. The lighting is soft and cinematic, emphasizing his wise and approachable expression. The background is a minimalist, high-contrast grey, maintaining a government-grade aesthetic of institutional authority and transparency." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcdpcEta__pQ3LdMyh7KZFJbjI3umyTFN5pqzm81BDJ8vHuGVFmTJ4hmLpkPgnDhEGUExc4tLPrj0Iu9aGemtjJV8LCR0Xie41-F60nLPl_WHV4c539ObvnMy2S2dYtDpVGzfsoIhqGJ6787NuK_0ZG21e5kj_0_mh8-yTusUAuLqIbMwdjIp8Tpb02ONVdOqVPlpl8jEa8Il_BaLKoKLfQ-U98h4Ud7iDlCJptrfpXQGl8Z42FzX3rg"/>
+<div class="absolute top-4 right-4 bg-surface px-3 py-1 border border-on-background font-label-md text-label-md">
+                        ID: #2401
+                    </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline-md text-headline-md mb-1 uppercase">Chief Adebayo Johnson</h3>
+<p class="font-body-md text-body-md text-secondary mb-4">Visionary leadership for community development and digital infrastructure.</p>
+<div class="flex items-center justify-between">
+<a class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" href="#" onclick="event.stopPropagation()">
+<span class="material-symbols-outlined text-[18px]">description</span>
+                            View Manifesto
+                        </a>
+<button class="bg-on-background text-on-primary px-8 py-3 font-label-md text-label-md uppercase tracking-wider transition-all group-hover:bg-primary-container group-hover:text-on-primary-container select-btn">
+                            Select
+                        </button>
+</div>
+</div>
+</div>
+<!-- Candidate 2 -->
+<div class="candidate-card bg-surface border-2 border-on-background flex flex-col transition-all cursor-pointer group candidate-card-selected" onclick="selectCandidate(this)">
+<div class="relative w-full h-72">
+<img class="w-full h-full object-cover" data-alt="A professional business portrait of a confident Nigerian female candidate. She is wearing a modern, sharp suit in charcoal grey with a gold accessory. Her stance is powerful and reliable. The lighting is professional, high-key, and bright, conveying a sense of civic stability and institutional weight. The background is pristine white to maintain focus on the candidate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSXFGf-I2Qms_BEGWDj3mR97r-FjWXuLc_SnpHPaqPw0ZhVT7PLoG90pUvs36pY0SpWXOuPYz0Rfo7R1_uP_UKQpHXokpjJSdIJ2EwkIiZUfoU89DIfj9Qdv4W8vIu0BVpn1Lh26Bo5ta1uqu2khVs5p2S95ENeAsTtbkgbZwpXb3imHakmp9nyehqkCtj6bzseJvnbanA-0tiowS6pW01TobmUMCa4XMef-LJnis-hPQEHD3VHc-q1w"/>
+<div class="absolute top-4 right-4 bg-surface px-3 py-1 border border-on-background font-label-md text-label-md">
+                        ID: #2402
+                    </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline-md text-headline-md mb-1 uppercase">Dr. Ngozi Okonjo-Bello</h3>
+<p class="font-body-md text-body-md text-secondary mb-4">Empowering the youth through vocational training and economic transparency.</p>
+<div class="flex items-center justify-between">
+<a class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" href="#" onclick="event.stopPropagation()">
+<span class="material-symbols-outlined text-[18px]">description</span>
+                            View Manifesto
+                        </a>
+<button class="bg-primary-container text-on-primary-container px-8 py-3 font-label-md text-label-md uppercase tracking-wider font-bold select-btn">
+                            Selected
+                        </button>
+</div>
+</div>
+</div>
+<!-- Candidate 3 -->
+<div class="candidate-card bg-surface border-2 border-on-background flex flex-col transition-all cursor-pointer group" onclick="selectCandidate(this)">
+<div class="relative w-full h-72">
+<img class="w-full h-full object-cover" data-alt="A high-quality professional portrait of a younger Nigerian male candidate, looking determined and intelligent. He is wearing a high-end traditional attire with subtle gold embroidery. The lighting is precise, highlighting his features against a clean, professional studio background. The mood is one of serious commitment to democratic values and civic duty." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPTLQTlDM_D69retIdtTwgBx5bY77p3R1id_AqZDFUvENXGlLh4Z_ori3XUfERUIvaLAWg9_grQLfkdGEAaiflokPXMqW4bJy5OAMv4woBe8cc3IRvBS3OM9ObKOJUKNVwUiIMkYiFYAPrNFJLvlxN2RHUpWsxnZixkfUnH6YId3lkix-mIPI9BsqGkarA_yzqiEqTc7VwkQ8n78MOcnapvnVmXZVzZuJ7V4jTJVR23CdoRdA3OCQFkg"/>
+<div class="absolute top-4 right-4 bg-surface px-3 py-1 border border-on-background font-label-md text-label-md">
+                        ID: #2403
+                    </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline-md text-headline-md mb-1 uppercase">Engr. Tunde Williams</h3>
+<p class="font-body-md text-body-md text-secondary mb-4">Modernizing agricultural systems and ensuring local safety protocols.</p>
+<div class="flex items-center justify-between">
+<a class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" href="#" onclick="event.stopPropagation()">
+<span class="material-symbols-outlined text-[18px]">description</span>
+                            View Manifesto
+                        </a>
+<button class="bg-on-background text-on-primary px-8 py-3 font-label-md text-label-md uppercase tracking-wider transition-all group-hover:bg-primary-container group-hover:text-on-primary-container select-btn">
+                            Select
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Information Card -->
+<div class="mt-8 p-4 bg-surface-container border-l-4 border-primary">
+<p class="font-body-md text-body-md italic text-on-surface">
+                Note: You can only select one candidate for this position. Once you proceed, your selection will be temporarily locked until the final review screen.
+            </p>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t-2 border-outline-variant px-6 py-4 flex gap-4 z-50">
+<button class="flex-1 py-4 border-2 border-on-background font-label-md text-label-md uppercase font-bold tracking-widest text-on-background hover:bg-surface-container-high transition-all active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">chevron_left</span>
+            Previous
+        </button>
+<button class="flex-[1.5] py-4 bg-primary-container border-2 border-on-background font-label-md text-label-md uppercase font-bold tracking-widest text-on-primary-container hover:brightness-95 transition-all active:scale-95 flex items-center justify-center gap-2">
+            Next Position
+            <span class="material-symbols-outlined">chevron_right</span>
+</button>
+</nav>
+<!-- Footer for Mobile Shell (Simple) -->
+<footer class="mb-28 text-center px-margin-mobile">
+<p class="font-label-sm text-label-sm text-secondary opacity-60">© 2024 Igarra Development Association (IDA).<br/>Secure Electronic Voting System.</p>
+</footer>
+<script>
+        function selectCandidate(element) {
+            // Remove selection from all cards
+            document.querySelectorAll('.candidate-card').forEach(card => {
+                card.classList.remove('candidate-card-selected');
+                const btn = card.querySelector('.select-btn');
+                btn.innerText = 'Select';
+                btn.classList.remove('bg-primary-container', 'text-on-primary-container', 'font-bold');
+                btn.classList.add('bg-on-background', 'text-on-primary');
+            });
+
+            // Add selection to clicked card
+            element.classList.add('candidate-card-selected');
+            const selectedBtn = element.querySelector('.select-btn');
+            selectedBtn.innerText = 'Selected';
+            selectedBtn.classList.remove('bg-on-background', 'text-on-primary');
+            selectedBtn.classList.add('bg-primary-container', 'text-on-primary-container', 'font-bold');
+
+            // Haptic feedback simulation
+            if (window.navigator.vibrate) {
+                window.navigator.vibrate(10);
+            }
+        }
+    </script>
+</body></html>

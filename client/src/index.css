@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors mapping from Stitch design */
+  --color-primary-container: #d4af37;
+  --color-secondary: #5e5e5e;
+  --color-error-container: #ffdad6;
+  --color-inverse-primary: #e9c349;
+  --color-inverse-surface: #313030;
+  --color-secondary-fixed: #e2e2e2;
+  --color-inverse-on-surface: #f3f0ef;
+  --color-tertiary: #5d5f5b;
+  --color-on-error-container: #93000a;
+  --color-tertiary-fixed: #e3e3de;
+  --color-on-tertiary-fixed: #1a1c19;
+  --color-on-surface-variant: #4d4635;
+  --color-outline-variant: #d0c5af;
+  --color-primary: #735c00;
+  --color-on-primary-fixed-variant: #574500;
+  --color-on-background: #1c1b1b;
+  --color-surface-bright: #fcf9f8;
+  --color-on-primary-fixed: #241a00;
+  --color-background: #fcf9f8;
+  --color-surface-container-high: #eae7e7;
+  --color-surface-container-highest: #e5e2e1;
+  --color-secondary-container: #e2e2e2;
+  --color-surface: #fcf9f8;
+  --color-surface-container: #f0eded;
+  --color-outline: #7f7663;
+  --color-on-secondary-fixed: #1b1b1b;
+  --color-tertiary-fixed-dim: #c6c7c2;
+  --color-surface-dim: #dcd9d9;
+  --color-secondary-fixed-dim: #c6c6c6;
+  --color-on-primary: #ffffff;
+  --color-on-tertiary-container: #444542;
+  --color-on-tertiary: #ffffff;
+  --color-on-secondary-fixed-variant: #474747;
+  --color-on-secondary-container: #646464;
+  --color-surface-tint: #735c00;
+  --color-on-error: #ffffff;
+  --color-primary-fixed: #ffe088;
+  --color-surface-container-lowest: #ffffff;
+  --color-error: #ba1a1a;
+  --color-surface-container-low: #f6f3f2;
+  --color-primary-fixed-dim: #e9c349;
+  --color-on-tertiary-fixed-variant: #454744;
+  --color-on-secondary: #ffffff;
+  --color-surface-variant: #e5e2e1;
+  --color-on-primary-container: #554300;
+  --color-on-surface: #1c1b1b;
+
+  /* Custom Typography Classes mapped to project guidelines */
+  --font-sans: "Inter", sans-serif;
+  
+  --font-size-headline-xl: 48px;
+  --font-size-headline-lg: 32px;
+  --font-size-headline-lg-mobile: 28px;
+  --font-size-headline-md: 24px;
+  --font-size-headline-sm: 20px;
+  --font-size-body-lg: 18px;
+  --font-size-body-md: 16px;
+  --font-size-label-md: 14px;
+  --font-size-label-sm: 12px;
+
+  /* Spacing values */
+  --spacing-gutter: 32px;
+  --spacing-container-max: 1280px;
+  --spacing-base: 8px;
+  --spacing-margin-desktop: 64px;
+  --spacing-margin-mobile: 24px;
+
+  /* Zero-radius standard for government-grade feel (DESIGN.md: Sharp 0px corners) */
+  --radius-default: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-full: 9999px;
+}
+
+@layer utilities {
+  .gold-border-focus:focus {
+    outline: 2px solid #d4af37;
+    outline-offset: 2px;
+  }
+  .canvas-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #fcf9f8;
+  }
+  .bento-card {
+    border: 1px solid #1c1b1b;
+    background: #ffffff;
+    transition: all 0.2s ease;
+  }
+  .bento-card:hover {
+    border-color: #d4af37;
+  }
+  .button-shadow-active:active {
+    transform: scale(0.98);
+  }
+  .form-focus-ring:focus {
+    outline: none;
+    border-color: #735c00;
+    box-shadow: inset 0 0 0 1px #735c00;
+  }
+  .pulse-live {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .radial-progress {
+    --value: 78;
+    --size: 12rem;
+    --thickness: 1.2rem;
+    display: grid;
+    place-content: center;
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, white 79%, transparent 80% 100%),
+                conic-gradient(#d4af37 calc(var(--value) * 1%), #f0eded 0);
+  }
+
+  /* Bento layout grid used by dashboard-style screens */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+  }
+
+  /* Hard "action" shadow used on hover for primary buttons/cards */
+  .action-button:hover {
+    box-shadow: 4px 4px 0px 0px #000000;
+  }
+
+  /* Selected candidate card state (Candidate Selection screen) */
+  .candidate-card-selected {
+    border: 4px solid #d4af37 !important;
+  }
+
+  /* Thin gold-accented scrollbar used inside sidebar/nav panels */
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #d4af37; }
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+}
+.material-symbols-outlined.fill {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #fcf9f8;
+  color: #1c1b1b;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}

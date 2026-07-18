@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Results | IDA Election Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-container": "#b2b3af",
+                    "secondary": "#5e5e5e",
+                    "error-container": "#ffdad6",
+                    "primary-container": "#d4af37",
+                    "inverse-primary": "#e9c349",
+                    "inverse-surface": "#313030",
+                    "secondary-fixed": "#e2e2e2",
+                    "inverse-on-surface": "#f3f0ef",
+                    "tertiary": "#5d5f5b",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#e3e3de",
+                    "on-tertiary-fixed": "#1a1c19",
+                    "on-surface-variant": "#4d4635",
+                    "outline-variant": "#d0c5af",
+                    "primary": "#735c00",
+                    "on-primary-fixed-variant": "#574500",
+                    "on-background": "#1c1b1b",
+                    "surface-bright": "#fcf9f8",
+                    "on-primary-fixed": "#241a00",
+                    "background": "#fcf9f8",
+                    "surface-container-high": "#eae7e7",
+                    "surface-container-highest": "#e5e2e1",
+                    "secondary-container": "#e2e2e2",
+                    "surface": "#fcf9f8",
+                    "surface-container": "#f0eded",
+                    "outline": "#7f7663",
+                    "on-secondary-fixed": "#1b1b1b",
+                    "tertiary-fixed-dim": "#c6c7c2",
+                    "surface-dim": "#dcd9d9",
+                    "secondary-fixed-dim": "#c6c6c6",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#444542",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#474747",
+                    "on-secondary-container": "#646464",
+                    "surface-tint": "#735c00",
+                    "on-error": "#ffffff",
+                    "primary-fixed": "#ffe088",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f6f3f2",
+                    "primary-fixed-dim": "#e9c349",
+                    "on-tertiary-fixed-variant": "#454744",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#e5e2e1",
+                    "on-primary-container": "#554300",
+                    "on-surface": "#1c1b1b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "32px",
+                    "container-max": "1280px",
+                    "base": "8px",
+                    "margin-desktop": "64px",
+                    "margin-mobile": "24px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pulse-live {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .scroll-hide::-webkit-scrollbar { display: none; }
+        .radial-progress {
+            --value: 78;
+            --size: 12rem;
+            --thickness: 1.2rem;
+            display: grid;
+            place-content: center;
+            width: var(--size);
+            height: var(--size);
+            border-radius: 50%;
+            background: radial-gradient(closest-side, white 79%, transparent 80% 100%),
+                        conic-gradient(#D4AF37 calc(var(--value) * 1%), #F0EDED 0);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface dark:bg-inverse-surface border-b-2 border-on-background dark:border-outline">
+<div class="flex items-center gap-4">
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-inverse-primary">IDA Election Portal</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex gap-4">
+<span class="material-symbols-outlined text-secondary dark:text-secondary-fixed hover:bg-surface-container transition-colors p-2 cursor-pointer">account_balance</span>
+<span class="material-symbols-outlined text-secondary dark:text-secondary-fixed hover:bg-surface-container transition-colors p-2 cursor-pointer">notifications</span>
+<span class="material-symbols-outlined text-secondary dark:text-secondary-fixed hover:bg-surface-container transition-colors p-2 cursor-pointer">account_circle</span>
+</div>
+<button class="bg-black text-white px-6 py-2 font-label-md text-label-md hover:ring-2 hover:ring-primary-container transition-all">Secure Session</button>
+</div>
+</header>
+<div class="flex flex-1 pt-16">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 flex flex-col pt-8 bg-surface-container dark:bg-surface-dim border-r border-on-background dark:border-outline z-40">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined text-on-primary-container">how_to_vote</span>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm font-bold text-primary dark:text-inverse-primary leading-none">Admin Portal</p>
+<p class="text-label-sm font-label-sm text-secondary opacity-70">Election 2024</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-md text-label-md">Candidates</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-label-md text-label-md">Positions</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-label-md text-label-md">Voters</span>
+</a>
+<a class="flex items-center gap-4 bg-primary-container text-on-primary-container font-bold border-l-4 border-primary px-4 py-3 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-md text-label-md">Live Results</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-md text-label-md">Audit Logs</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="p-6">
+<button class="w-full bg-primary-container text-black font-label-md text-label-md py-3 border-2 border-black hover:bg-primary transition-colors">Cast Vote</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 p-margin-desktop bg-surface-bright">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-12">
+<div>
+<h1 class="font-headline-xl text-headline-xl text-on-background mb-2 uppercase tracking-tight">Live Results</h1>
+<div class="flex items-center gap-3">
+<span class="flex h-3 w-3 rounded-full bg-error pulse-live"></span>
+<span class="font-label-md text-label-md text-secondary uppercase tracking-widest">Real-time Election Analytics — Presidential Election</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="bg-surface border-2 border-on-background px-6 py-2 font-label-md text-label-md flex items-center gap-2 hover:bg-secondary-container transition-all">
+<span class="material-symbols-outlined text-[18px]">download</span> Export Report
+                    </button>
+<button class="bg-black text-white px-6 py-2 font-label-md text-label-md hover:ring-2 hover:ring-primary-container transition-all">Refresh Data</button>
+</div>
+</div>
+<!-- Bento Grid Dashboard -->
+<div class="grid grid-cols-12 gap-8 mb-12">
+<!-- Main Vote Tally: Presidential -->
+<div class="col-span-8 bg-white border border-black p-gutter flex flex-col relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary-container"></div>
+<div class="flex justify-between items-center mb-8">
+<h2 class="font-headline-md text-headline-md text-on-background uppercase">Current Standings</h2>
+<span class="bg-primary-container text-black px-3 py-1 font-label-sm text-label-sm uppercase font-bold">Verified Counts</span>
+</div>
+<div class="space-y-10 flex-1 flex flex-col justify-center">
+<!-- Candidate 1 -->
+<div class="space-y-2">
+<div class="flex justify-between items-end font-label-md text-label-md">
+<span class="text-on-background">CHIEF ADEBAYO OGUNDIPE</span>
+<span class="font-bold text-headline-sm">12,402 VOTES (48.2%)</span>
+</div>
+<div class="h-6 bg-surface-container overflow-hidden border border-black/10">
+<div class="h-full bg-black transition-all duration-1000" style="width: 48.2%;"></div>
+</div>
+</div>
+<!-- Candidate 2 -->
+<div class="space-y-2">
+<div class="flex justify-between items-end font-label-md text-label-md">
+<span class="text-on-background">DR. CHINWE EZEKIEL</span>
+<span class="font-bold text-headline-sm">9,815 VOTES (38.1%)</span>
+</div>
+<div class="h-6 bg-surface-container overflow-hidden border border-black/10">
+<div class="h-full bg-primary-container transition-all duration-1000" style="width: 38.1%;"></div>
+</div>
+</div>
+<!-- Candidate 3 -->
+<div class="space-y-2">
+<div class="flex justify-between items-end font-label-md text-label-md">
+<span class="text-on-background">MR. YUSUF IBRAHIM</span>
+<span class="font-bold text-headline-sm">3,520 VOTES (13.7%)</span>
+</div>
+<div class="h-6 bg-surface-container overflow-hidden border border-black/10">
+<div class="h-full bg-outline-variant transition-all duration-1000" style="width: 13.7%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Turnout & Metrics -->
+<div class="col-span-4 space-y-8">
+<!-- Turnout Radial -->
+<div class="bg-white border border-black p-gutter flex flex-col items-center justify-center text-center relative overflow-hidden h-[340px]">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary-container"></div>
+<h2 class="font-label-md text-label-md text-secondary uppercase mb-6 tracking-widest">Total Voter Turnout</h2>
+<div class="radial-progress relative" style="--value: 78;">
+<div class="flex flex-col items-center">
+<span class="font-headline-xl text-headline-xl leading-none">78.4%</span>
+<span class="font-label-sm text-label-sm text-secondary uppercase">Of Registered</span>
+</div>
+</div>
+<p class="mt-6 font-label-md text-label-md font-bold">25,737 / 32,800 VOTED</p>
+</div>
+<!-- Small Stat Cards -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-black text-white p-4 flex flex-col justify-between aspect-square">
+<span class="material-symbols-outlined">timer</span>
+<div>
+<p class="font-label-sm text-label-sm opacity-60 uppercase">Polling Duration</p>
+<p class="font-headline-sm text-headline-sm">06:42:15</p>
+</div>
+</div>
+<div class="bg-white border border-black p-4 flex flex-col justify-between aspect-square">
+<span class="material-symbols-outlined text-primary">security</span>
+<div>
+<p class="font-label-sm text-label-sm text-secondary uppercase">Encryption</p>
+<p class="font-headline-sm text-headline-sm">AES-256</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Votes by Ward Table -->
+<div class="col-span-12 bg-white border border-black overflow-hidden relative">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary-container"></div>
+<div class="p-gutter border-b border-outline-variant flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-background uppercase">Regional Distribution (By Ward)</h2>
+<div class="flex items-center gap-2 bg-surface-container px-4 py-2">
+<span class="material-symbols-outlined text-[18px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 font-label-md text-label-md p-0 w-48" placeholder="Search ward..." type="text"/>
+</div>
+</div>
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container border-b border-outline">
+<th class="p-4 font-label-md text-label-md text-on-background uppercase">Ward Name</th>
+<th class="p-4 font-label-md text-label-md text-on-background uppercase text-right">Registered</th>
+<th class="p-4 font-label-md text-label-md text-on-background uppercase text-right">Actual Votes</th>
+<th class="p-4 font-label-md text-label-md text-on-background uppercase text-right">Turnout %</th>
+<th class="p-4 font-label-md text-label-md text-on-background uppercase">Leading Candidate</th>
+<th class="p-4 font-label-md text-label-md text-on-background uppercase">Status</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md">
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-4 font-bold">Oshika Ward A</td>
+<td class="p-4 text-right">4,200</td>
+<td class="p-4 text-right">3,850</td>
+<td class="p-4 text-right">91.6%</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 bg-black"></span> Adebayo</span></td>
+<td class="p-4"><span class="bg-primary-container text-black px-2 py-0.5 font-label-sm text-label-sm uppercase font-bold">Closed</span></td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-4 font-bold">Igarra Central</td>
+<td class="p-4 text-right">8,500</td>
+<td class="p-4 text-right">6,120</td>
+<td class="p-4 text-right">72.0%</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 bg-primary-container"></span> Ezekiel</span></td>
+<td class="p-4"><span class="text-primary font-bold font-label-sm text-label-sm uppercase">Active</span></td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-4 font-bold">Ugbogbo Ward</td>
+<td class="p-4 text-right">5,100</td>
+<td class="p-4 text-right">4,015</td>
+<td class="p-4 text-right">78.7%</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 bg-black"></span> Adebayo</span></td>
+<td class="p-4"><span class="text-primary font-bold font-label-sm text-label-sm uppercase">Active</span></td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-4 font-bold">Efe Ward B</td>
+<td class="p-4 text-right">3,400</td>
+<td class="p-4 text-right">2,890</td>
+<td class="p-4 text-right">85.0%</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 bg-outline-variant"></span> Yusuf</span></td>
+<td class="p-4"><span class="bg-primary-container text-black px-2 py-0.5 font-label-sm text-label-sm uppercase font-bold">Closed</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="p-4 font-bold">Mallam-Pai Ward</td>
+<td class="p-4 text-right">6,600</td>
+<td class="p-4 text-right">4,862</td>
+<td class="p-4 text-right">73.6%</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 bg-primary-container"></span> Ezekiel</span></td>
+<td class="p-4"><span class="text-primary font-bold font-label-sm text-label-sm uppercase">Active</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Map Placeholder -->
+<div class="bg-surface-container border border-black p-gutter mb-12 h-96 flex flex-col relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary-container"></div>
+<div class="flex justify-between items-center mb-6 relative z-10">
+<h2 class="font-headline-md text-headline-md text-on-background uppercase">Live Heatmap</h2>
+<p class="text-label-md font-label-md text-secondary">Spatial Distribution of Voter Density</p>
+</div>
+<div class="flex-1 w-full bg-cover bg-center grayscale contrast-125 opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" data-location="Igarra, Nigeria" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCqXiNnnTM3zZV8NRJovIs_H_JaiZ4TSnIPIB8QLWS-KwAi4eFYbjpVSMSsaUUrDjRIjwXNew73oe6Kg_Jq4_Mh8pyGruO-_CTmCRASijl10Ad9LKX7mv5zFVJt0RVvAKat9fmhi7_t_WUkOtT4IogKOdPWujPdSUyweEWk195QbxgTAHnvY8Z_AlbNKYmL85mwc6J82Na3h9IOOnUZ7_a-hmm_AgzK0bOeyJBPDv4lowo6w_bVxTU0AQ')">
+</div>
+<div class="absolute bottom-12 right-12 bg-black p-6 text-white max-w-xs z-20">
+<p class="font-label-md text-label-md mb-2 uppercase text-primary-container">Current Focus</p>
+<p class="font-body-md text-body-md">High concentration of activity detected in the South-East quadrant near Central Market Polling Station.</p>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="w-full py-8 px-margin-desktop bg-surface-container-lowest dark:bg-inverse-surface border-t border-outline-variant flex flex-col md:flex-row justify-between items-center mt-auto z-50">
+<div class="flex flex-col mb-4 md:mb-0">
+<span class="text-label-md font-label-md font-bold text-on-surface uppercase mb-1 tracking-widest">IDA | Secure Voting</span>
+<p class="text-body-md font-body-md text-on-surface-variant max-w-md opacity-80">© 2024 Igarra Development Association (IDA). Secure Electronic Voting System.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm text-label-sm uppercase tracking-widest" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm text-label-sm uppercase tracking-widest" href="#">Terms of Service</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm text-label-sm uppercase tracking-widest text-primary underline" href="#">Election Integrity</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm text-label-sm uppercase tracking-widest" href="#">Support</a>
+</div>
+</footer>
+<!-- Interactive Layer for Live Simulation -->
+<script>
+        // Simulate real-time updates for visual flare
+        setInterval(() => {
+            const votes = document.querySelectorAll('.text-headline-sm');
+            votes.forEach(vote => {
+                if (Math.random() > 0.7) {
+                    const current = parseInt(vote.innerText.match(/\d+,\d+/)[0].replace(',', ''));
+                    const next = (current + Math.floor(Math.random() * 5)).toLocaleString();
+                    const percentage = vote.innerText.match(/\d+\.\d+%/)[0];
+                    vote.innerText = `${next} VOTES (${percentage})`;
+                    
+                    // Flash effect
+                    vote.style.color = '#735c00'; // Primary
+                    setTimeout(() => { vote.style.color = ''; }, 200);
+                }
+            });
+        }, 3000);
+    </script>
+</body></html>

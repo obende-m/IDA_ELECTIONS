@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IDA Admin Portal - Election 2024</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-container": "#b2b3af",
+                    "secondary": "#5e5e5e",
+                    "error-container": "#ffdad6",
+                    "primary-container": "#d4af37",
+                    "inverse-primary": "#e9c349",
+                    "inverse-surface": "#313030",
+                    "secondary-fixed": "#e2e2e2",
+                    "inverse-on-surface": "#f3f0ef",
+                    "tertiary": "#5d5f5b",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#e3e3de",
+                    "on-tertiary-fixed": "#1a1c19",
+                    "on-surface-variant": "#4d4635",
+                    "outline-variant": "#d0c5af",
+                    "primary": "#735c00",
+                    "on-primary-fixed-variant": "#574500",
+                    "on-background": "#1c1b1b",
+                    "surface-bright": "#fcf9f8",
+                    "on-primary-fixed": "#241a00",
+                    "background": "#fcf9f8",
+                    "surface-container-high": "#eae7e7",
+                    "surface-container-highest": "#e5e2e1",
+                    "secondary-container": "#e2e2e2",
+                    "surface": "#fcf9f8",
+                    "surface-container": "#f0eded",
+                    "outline": "#7f7663",
+                    "on-secondary-fixed": "#1b1b1b",
+                    "tertiary-fixed-dim": "#c6c7c2",
+                    "surface-dim": "#dcd9d9",
+                    "secondary-fixed-dim": "#c6c6c6",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#444542",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#474747",
+                    "on-secondary-container": "#646464",
+                    "surface-tint": "#735c00",
+                    "on-error": "#ffffff",
+                    "primary-fixed": "#ffe088",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f6f3f2",
+                    "primary-fixed-dim": "#e9c349",
+                    "on-tertiary-fixed-variant": "#454744",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#e5e2e1",
+                    "on-primary-container": "#554300",
+                    "on-surface": "#1c1b1b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0px",
+                    "lg": "0px",
+                    "xl": "0px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "32px",
+                    "container-max": "1280px",
+                    "base": "8px",
+                    "margin-desktop": "64px",
+                    "margin-mobile": "24px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fcf9f8;
+            color: #1c1b1b;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d4af37; }
+        .action-button:hover {
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex">
+<!-- Sidebar Navigation -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container dark:bg-surface-dim border-r border-on-background flex flex-col pt-8 z-40 transition-all duration-300">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-on-background flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<p class="text-headline-sm font-headline-sm font-bold text-primary">Admin Portal</p>
+<p class="text-label-sm font-label-sm text-secondary uppercase tracking-widest">Election 2024</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-2 space-y-1 overflow-y-auto custom-scrollbar">
+<!-- Dashboard (Active) -->
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container font-bold border-l-4 border-primary px-4 py-3 scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-secondary px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-label-md font-label-md">Candidates</span>
+</a>
+<a class="flex items-center gap-3 text-secondary px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="text-label-md font-label-md">Positions</span>
+</a>
+<a class="flex items-center gap-3 text-secondary px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="text-label-md font-label-md">Voters</span>
+</a>
+<a class="flex items-center gap-3 text-secondary px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-label-md font-label-md">Live Results</span>
+</a>
+<a class="flex items-center gap-3 text-secondary px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-label-md font-label-md">Reports</span>
+</a>
+<a class="flex items-center gap-3 text-secondary px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="text-label-md font-label-md">Audit Logs</span>
+</a>
+<a class="flex items-center gap-3 text-secondary px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+</nav>
+<div class="p-6 border-t border-outline-variant">
+<button class="w-full bg-primary-container text-on-primary-container font-bold py-3 uppercase tracking-tighter hover:bg-primary transition-colors border border-on-background">
+                Cast Vote
+            </button>
+</div>
+</aside>
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface border-b-2 border-on-background">
+<div class="flex items-center gap-4">
+<span class="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
+<div class="hidden md:flex items-center gap-2 bg-on-background px-3 py-1 text-primary-container">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-label-md font-label-md uppercase tracking-wider">Secure Protocol v.4.0</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 border-r border-outline-variant pr-6">
+<button class="material-symbols-outlined text-secondary hover:bg-surface-container transition-colors p-2">account_balance</button>
+<div class="relative">
+<button class="material-symbols-outlined text-secondary hover:bg-surface-container transition-colors p-2">notifications</button>
+<span class="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+</div>
+<button class="material-symbols-outlined text-secondary hover:bg-surface-container transition-colors p-2">account_circle</button>
+</div>
+<button class="bg-on-background text-on-primary font-label-md text-label-md px-6 py-2 border-2 border-on-background hover:bg-transparent hover:text-on-background transition-all">
+                Secure Session
+            </button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 mt-16 flex-1 px-margin-desktop py-12 flex flex-col gap-8">
+<!-- Header & Election Status -->
+<section class="flex flex-col md:flex-row justify-between items-end border-b-2 border-on-background pb-6">
+<div>
+<h1 class="font-headline-xl text-headline-xl uppercase">Dashboard</h1>
+<p class="font-body-lg text-body-lg text-secondary">Monitoring real-time participation across 12 wards.</p>
+</div>
+<div class="flex flex-col items-end gap-2">
+<div class="flex items-center gap-2 text-label-md font-label-md uppercase text-primary">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+</span>
+                    Live Election Status: Active
+                </div>
+<div class="text-headline-sm font-headline-sm text-on-background tracking-tighter">
+                    Polls Close: 06:00 PM GMT
+                </div>
+</div>
+</section>
+<!-- KPI Cards Section -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- KPI 1 -->
+<div class="bg-surface border-t-2 border-primary-container p-6 border-x border-b border-on-background flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="text-label-md font-label-md text-secondary uppercase tracking-widest">Registered Voters</span>
+<span class="material-symbols-outlined text-primary">group_add</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-lg font-headline-lg">12,458</span>
+<span class="text-label-sm font-label-sm text-green-700 font-bold">+2.4% from last hour</span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface border-t-2 border-primary-container p-6 border-x border-b border-on-background flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="text-label-md font-label-md text-secondary uppercase tracking-widest">Votes Cast</span>
+<span class="material-symbols-outlined text-primary">how_to_vote</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-lg font-headline-lg">8,294</span>
+<span class="text-label-sm font-label-sm text-secondary font-bold">Total verified ballots</span>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface border-t-2 border-primary-container p-6 border-x border-b border-on-background flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="text-label-md font-label-md text-secondary uppercase tracking-widest">Turnout %</span>
+<span class="material-symbols-outlined text-primary">percent</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-lg font-headline-lg">66.5%</span>
+<div class="w-full h-2 bg-surface-container mt-2">
+<div class="h-full bg-primary" style="width: 66.5%"></div>
+</div>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="bg-on-background text-on-primary p-6 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="text-label-md font-label-md text-primary-container uppercase tracking-widest">Time Remaining</span>
+<span class="material-symbols-outlined text-primary-container">timer</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-lg font-headline-lg" id="countdown">04:22:15</span>
+<span class="text-label-sm font-label-sm text-secondary-fixed">System locked at 18:00</span>
+</div>
+</div>
+</section>
+<!-- Main Dashboard Area (Bento Layout) -->
+<div class="bento-grid">
+<!-- Live Voting Activity Chart -->
+<div class="col-span-12 lg:col-span-8 bg-surface border border-on-background p-8 flex flex-col gap-6">
+<div class="flex justify-between items-center">
+<div>
+<h3 class="font-headline-sm text-headline-sm uppercase">Live Voting Activity</h3>
+<p class="text-label-md font-label-md text-secondary">Hourly voting volume across all digital channels</p>
+</div>
+<select class="bg-surface border-2 border-on-background font-label-md text-label-md px-4 py-2 focus:ring-primary focus:border-primary">
+<option>Real-time (Auto)</option>
+<option>Past 6 Hours</option>
+<option>All Day</option>
+</select>
+</div>
+<div class="relative h-64 w-full bg-surface-container flex items-end justify-between px-8 py-4 border border-outline-variant overflow-hidden">
+<!-- Fake Chart Visual -->
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+<div class="w-full h-full" style="background-image: linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px); background-size: 40px 40px;"></div>
+</div>
+<!-- Vertical Bars (Faked with CSS) -->
+<div class="w-12 bg-on-background h-1/4 relative group">
+<div class="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">120</div>
+</div>
+<div class="w-12 bg-on-background h-2/5 relative group">
+<div class="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">450</div>
+</div>
+<div class="w-12 bg-on-background h-3/5 relative group">
+<div class="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">890</div>
+</div>
+<div class="w-12 bg-primary h-5/6 relative group">
+<div class="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">1,240</div>
+</div>
+<div class="w-12 bg-on-background h-4/5 relative group">
+<div class="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">1,100</div>
+</div>
+<div class="w-12 bg-on-background h-3/4 relative group">
+<div class="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">950</div>
+</div>
+<div class="w-12 bg-on-background h-2/3 relative group">
+<div class="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">820</div>
+</div>
+<div class="w-12 bg-on-background h-1/2 relative group">
+<div class="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">600</div>
+</div>
+</div>
+<div class="flex justify-between px-8 text-label-sm font-label-sm text-secondary uppercase tracking-widest">
+<span>08:00 AM</span>
+<span>10:00 AM</span>
+<span>12:00 PM</span>
+<span>02:00 PM</span>
+<span>04:00 PM</span>
+</div>
+</div>
+<!-- Quick Actions Panel -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container border border-on-background p-8 flex flex-col gap-6">
+<div class="border-b-2 border-primary pb-4">
+<h3 class="font-headline-sm text-headline-sm uppercase">Quick Actions</h3>
+<p class="text-label-md font-label-md text-secondary">Authorized Administrative Commands</p>
+</div>
+<div class="flex flex-col gap-4">
+<button class="flex items-center justify-between p-4 bg-surface border border-on-background hover:bg-on-background hover:text-on-primary transition-all group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-label-md font-label-md">Register New Voter</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="flex items-center justify-between p-4 bg-surface border border-on-background hover:bg-on-background hover:text-on-primary transition-all group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">description</span>
+<span class="text-label-md font-label-md">Export Hourly Report</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="flex items-center justify-between p-4 bg-surface border border-on-background hover:bg-on-background hover:text-on-primary transition-all group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">history</span>
+<span class="text-label-md font-label-md">View System Audit</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="flex items-center justify-between p-4 bg-error text-on-error border border-error hover:bg-transparent hover:text-error transition-all group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">emergency</span>
+<span class="text-label-md font-label-md font-bold uppercase">Emergency Lock</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">lock</span>
+</button>
+</div>
+<div class="mt-4 p-4 border border-outline-variant bg-surface italic text-body-md text-secondary">
+                    "Transparency is the cornerstone of democracy."
+                </div>
+</div>
+<!-- Detailed Stats Grid -->
+<div class="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface border border-on-background p-6">
+<h4 class="text-label-md font-label-md uppercase text-secondary mb-4">Ward Leaderboard</h4>
+<div class="space-y-3">
+<div class="flex justify-between items-center border-b border-surface-container-high pb-2">
+<span class="text-body-md">Ward 01 - Okore</span>
+<span class="text-label-md font-bold">88% Turnout</span>
+</div>
+<div class="flex justify-between items-center border-b border-surface-container-high pb-2">
+<span class="text-body-md">Ward 04 - Udama</span>
+<span class="text-label-md font-bold">76% Turnout</span>
+</div>
+<div class="flex justify-between items-center border-b border-surface-container-high pb-2">
+<span class="text-body-md">Ward 11 - Somorika</span>
+<span class="text-label-md font-bold">72% Turnout</span>
+</div>
+</div>
+</div>
+<div class="bg-surface border border-on-background p-6">
+<h4 class="text-label-md font-label-md uppercase text-secondary mb-4">System Health</h4>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+<span class="text-body-md">Cloud Nodes: 12/12 Online</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+<span class="text-body-md">Encryption Level: AES-256</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+<span class="text-body-md">Blockchain Finality: Confirmed</span>
+</div>
+</div>
+</div>
+<div class="bg-surface border border-on-background p-6">
+<h4 class="text-label-md font-label-md uppercase text-secondary mb-4">Recent Audit Log</h4>
+<div class="text-label-sm font-label-sm space-y-2">
+<div class="text-secondary"><span class="text-on-background font-bold">[14:22:04]</span> Voter #ID8829 validated successfully.</div>
+<div class="text-secondary"><span class="text-on-background font-bold">[14:21:48]</span> Admin session extended (Admin_Root_01).</div>
+<div class="text-secondary"><span class="text-on-background font-bold">[14:21:30]</span> Bulk export initiated by Regional Head.</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-64 right-0 bg-surface-container-lowest border-t border-outline-variant py-4 px-margin-desktop z-30">
+<div class="flex justify-between items-center">
+<p class="text-label-sm font-label-sm text-secondary">© 2024 Igarra Development Association (IDA). Secure Electronic Voting System.</p>
+<div class="flex gap-6">
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Election Integrity</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Support</a>
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-[14px]">lock_person</span>
+<span class="text-label-sm font-label-sm uppercase font-bold tracking-tighter">E2E Encrypted</span>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Simple Countdown Timer Simulation
+        function updateTimer() {
+            const timerElement = document.getElementById('countdown');
+            let [h, m, s] = timerElement.innerText.split(':').map(Number);
+            
+            setInterval(() => {
+                s--;
+                if (s < 0) { s = 59; m--; }
+                if (m < 0) { m = 59; h--; }
+                
+                timerElement.innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }, 1000);
+        }
+        
+        document.addEventListener('DOMContentLoaded', updateTimer);
+
+        // Micro-interaction for Sidebar
+        const navItems = document.querySelectorAll('nav a');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                navItems.forEach(i => {
+                    i.classList.remove('bg-primary-container', 'text-on-primary-container', 'font-bold', 'border-l-4', 'border-primary', 'scale-95');
+                    i.classList.add('text-secondary');
+                });
+                item.classList.add('bg-primary-container', 'text-on-primary-container', 'font-bold', 'border-l-4', 'border-primary', 'scale-95');
+                item.classList.remove('text-secondary');
+            });
+        });
+    </script>
+</body></html>

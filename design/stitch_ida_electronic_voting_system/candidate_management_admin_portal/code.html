@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Candidate Management | IDA Election Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-container": "#b2b3af",
+                    "secondary": "#5e5e5e",
+                    "error-container": "#ffdad6",
+                    "primary-container": "#d4af37",
+                    "inverse-primary": "#e9c349",
+                    "inverse-surface": "#313030",
+                    "secondary-fixed": "#e2e2e2",
+                    "inverse-on-surface": "#f3f0ef",
+                    "tertiary": "#5d5f5b",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#e3e3de",
+                    "on-tertiary-fixed": "#1a1c19",
+                    "on-surface-variant": "#4d4635",
+                    "outline-variant": "#d0c5af",
+                    "primary": "#735c00",
+                    "on-primary-fixed-variant": "#574500",
+                    "on-background": "#1c1b1b",
+                    "surface-bright": "#fcf9f8",
+                    "on-primary-fixed": "#241a00",
+                    "background": "#fcf9f8",
+                    "surface-container-high": "#eae7e7",
+                    "surface-container-highest": "#e5e2e1",
+                    "secondary-container": "#e2e2e2",
+                    "surface": "#fcf9f8",
+                    "surface-container": "#f0eded",
+                    "outline": "#7f7663",
+                    "on-secondary-fixed": "#1b1b1b",
+                    "tertiary-fixed-dim": "#c6c7c2",
+                    "surface-dim": "#dcd9d9",
+                    "secondary-fixed-dim": "#c6c6c6",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#444542",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#474747",
+                    "on-secondary-container": "#646464",
+                    "surface-tint": "#735c00",
+                    "on-error": "#ffffff",
+                    "primary-fixed": "#ffe088",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f6f3f2",
+                    "primary-fixed-dim": "#e9c349",
+                    "on-tertiary-fixed-variant": "#454744",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#e5e2e1",
+                    "on-primary-container": "#554300",
+                    "on-surface": "#1c1b1b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "32px",
+                    "container-max": "1280px",
+                    "base": "8px",
+                    "margin-desktop": "64px",
+                    "margin-mobile": "24px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d4af37;
+        }
+        body {
+            background-color: #fcf9f8;
+            color: #1c1b1b;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-x-hidden">
+<!-- TopAppBar Shell -->
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface dark:bg-inverse-surface border-b-2 border-on-background dark:border-outline flat no shadows">
+<div class="flex items-center gap-4">
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-inverse-primary uppercase tracking-tighter">IDA Election Portal</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-secondary dark:text-secondary-fixed hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors p-2 cursor-pointer">account_balance</span>
+<span class="material-symbols-outlined text-secondary dark:text-secondary-fixed hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors p-2 cursor-pointer">notifications</span>
+<span class="material-symbols-outlined text-secondary dark:text-secondary-fixed hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors p-2 cursor-pointer">account_circle</span>
+</div>
+<button class="bg-primary-container text-on-primary-container font-label-md text-label-md px-6 py-2 border-2 border-black hover:border-primary-container transition-all">Secure Session</button>
+</div>
+</nav>
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 flex flex-col pt-8 bg-surface-container dark:bg-surface-dim border-r border-on-background dark:border-outline flat no shadows">
+<div class="px-6 mb-10">
+<p class="text-label-md font-label-md uppercase tracking-widest text-primary mb-1">Admin Portal</p>
+<p class="text-headline-sm font-headline-sm font-bold">Election 2024</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 bg-primary-container text-on-primary-container font-bold border-l-4 border-primary px-4 py-3 scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-md text-label-md">Candidates</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-label-md text-label-md">Positions</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-label-md text-label-md">Voters</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-md text-label-md">Live Results</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-md text-label-md">Audit Logs</span>
+</a>
+<a class="flex items-center gap-4 text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="p-6">
+<button class="w-full bg-primary-container text-on-primary-container font-label-md text-label-md py-4 border-2 border-black hover:bg-primary transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">how_to_reg</span>
+                Cast Vote
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 p-margin-desktop min-h-[calc(100vh-128px)]">
+<div class="max-w-container-max mx-auto">
+<!-- Page Header -->
+<header class="flex justify-between items-end mb-12">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-background mb-2">Candidate Management</h1>
+<p class="text-secondary font-body-md">Oversee official ballot entries for the 2024 Election Cycle.</p>
+</div>
+<div class="flex gap-4">
+<button class="bg-black text-white px-8 py-3 font-label-md text-label-md border-2 border-transparent hover:border-primary-container transition-all flex items-center gap-2" onclick="toggleModal()">
+<span class="material-symbols-outlined">add</span>
+                        ADD CANDIDATE
+                    </button>
+</div>
+</header>
+<!-- Table Filters & Search -->
+<section class="bg-surface-container-low border border-black p-6 mb-8 flex flex-wrap items-center justify-between gap-6">
+<div class="flex-1 min-w-[300px] relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary">search</span>
+<input class="w-full bg-white border-b-2 border-black focus:ring-0 focus:border-primary-container pl-12 py-3 font-body-md outline-none" placeholder="Search by name, position, or ID..." type="text"/>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<label class="text-label-sm font-label-sm text-secondary uppercase mb-1">Filter by Position</label>
+<select class="bg-white border-2 border-black px-4 py-2 font-label-md text-label-md min-w-[200px] focus:ring-0 focus:border-primary-container">
+<option>All Positions</option>
+<option>President</option>
+<option>General Secretary</option>
+<option>Financial Secretary</option>
+</select>
+</div>
+<div class="flex flex-col">
+<label class="text-label-sm font-label-sm text-secondary uppercase mb-1">Status</label>
+<div class="flex gap-2">
+<button class="bg-primary text-white px-4 py-2 text-label-sm font-label-sm border border-black">Active</button>
+<button class="bg-white text-black px-4 py-2 text-label-sm font-label-sm border border-black hover:bg-surface-container">Archived</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Candidate Data Table -->
+<div class="border border-black overflow-hidden bg-white">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-neutral border-b-2 border-black">
+<th class="px-6 py-4 font-label-md text-label-md uppercase text-secondary">Candidate Details</th>
+<th class="px-6 py-4 font-label-md text-label-md uppercase text-secondary">Position Title</th>
+<th class="px-6 py-4 font-label-md text-label-md uppercase text-secondary">Verification Status</th>
+<th class="px-6 py-4 font-label-md text-label-md uppercase text-secondary text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-6 flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container border border-black overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a dignified West African candidate in formal attire, set against a clean, minimal white background. High-contrast lighting with a sharp focus on facial features, embodying institutional authority and civic stability. The overall aesthetic is clean, modern, and trustworthy, perfectly aligned with a government-grade electronic voting system UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBW43hvqJZgF9FtJvLFNkqbNjfc4dtDNNPitIFIOx09FEXgP5Gqcx_yZXvcDz-QtbGqyUVx9xFD_zqZmKBCXIbMOP1OjuEraBrX08kxN_4_HQB-d4qPtakELUsMAp67guva-78lRx6dDpUGIW6J2Wh477twBaihtrGR5rj02ReIq_jV5UT2Bu4rkfF-ZcqwsBixAzkWdPmJKJJmeJ0HAPb4g3Jearb3wiWUR-aVSmErvXejOkPmV9wi5Q"/>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm text-on-background">Prince Adeyemi Igarra</p>
+<p class="text-label-sm text-secondary">ID: IDA-2024-001</p>
+</div>
+</td>
+<td class="px-6 py-6">
+<span class="font-label-md text-label-md px-3 py-1 bg-surface-container border border-black uppercase">Presidential Candidate</span>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-primary-container rounded-full"></div>
+<span class="bg-primary-container text-black text-label-sm font-label-sm px-2 py-0.5 uppercase">Verified</span>
+</div>
+</td>
+<td class="px-6 py-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 border border-black hover:bg-primary-container hover:text-black transition-all">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 border border-black hover:bg-error-container hover:text-on-error-container transition-all">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-6 flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container border border-black overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A professional close-up of a middle-aged woman candidate for an association election, featuring a confident smile and sharp, clean composition. The lighting is soft but high-key, emphasizing transparency and openness. The background is a stark, textured light grey, maintaining a premium institutional feel in line with the black-and-gold color scheme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD9zdBgkQkYrSmijQAdpcEWb8YOVWyxJ0FOXr_4YxvzHHaYHfWqp-VFz5zHQm4yPx7ZA0lj69pTuTOhCyFbHUhFgFgqrIQmstAOnQjHj9TGuvzEbbF2eqN4ZxbvEOu9yKM5PpV4_RbEIJVN5FceYT32ifGPTmk2mXdexfmMnDHM0-jueMdv5nq0v8CALnV8y-nwrb2EltCiVnEFFp1MPhQ-Pf4ybRMvy1y49QL-BCx1e2DCjpRMIVQEQ"/>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm text-on-background">Chief (Mrs) Elena Ojo</p>
+<p class="text-label-sm text-secondary">ID: IDA-2024-042</p>
+</div>
+</td>
+<td class="px-6 py-6">
+<span class="font-label-md text-label-md px-3 py-1 bg-surface-container border border-black uppercase">General Secretary</span>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-primary-container rounded-full"></div>
+<span class="bg-primary-container text-black text-label-sm font-label-sm px-2 py-0.5 uppercase">Verified</span>
+</div>
+</td>
+<td class="px-6 py-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 border border-black hover:bg-primary-container hover:text-black transition-all">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 border border-black hover:bg-error-container hover:text-on-error-container transition-all">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-6 flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container border border-black overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A striking portrait of a young professional candidate, with an emphasis on clarity and modern leadership. The visual style uses sharp outlines and high contrast between dark clothing and a light architectural background. The mood is serious and focused, suitable for a high-security democratic portal interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5GxGx6DCNq-CGhZAyLIZ3-QX_oApjClU40JFIJN-JdV9ZeSbVNfI9tLbnkjHqQAdCP3VUqnRzfxlfLSPvC6uBEIH6Aku2h03NqPlDtQBRRekYh5-wdhnreoCXxA8oNKX8dpdv7ZscM3b0snfBWtQvJZbKh3h5cDcNaWFRlfeUZFmqsS_gACBuzOGcDgWQzqjt35BI73HhO8FrGrmohxAUUCeT2ovrJpaSV3lG3Liokg7KNdVFTubqHQ"/>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm text-on-background">Dr. Samuel Ebira</p>
+<p class="text-label-sm text-secondary">ID: IDA-2024-088</p>
+</div>
+</td>
+<td class="px-6 py-6">
+<span class="font-label-md text-label-md px-3 py-1 bg-surface-container border border-black uppercase">Financial Secretary</span>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-outline rounded-full"></div>
+<span class="bg-secondary-container text-secondary text-label-sm font-label-sm px-2 py-0.5 uppercase">Pending</span>
+</div>
+</td>
+<td class="px-6 py-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 border border-black hover:bg-primary-container hover:text-black transition-all">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 border border-black hover:bg-error-container hover:text-on-error-container transition-all">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="p-4 bg-surface-container flex items-center justify-between border-t border-black">
+<p class="text-label-sm font-label-sm text-secondary">Showing 1-3 of 24 candidates</p>
+<div class="flex gap-2">
+<button class="p-2 border border-black bg-white hover:bg-surface-container-highest transition-all">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-2 border border-black bg-white hover:bg-surface-container-highest transition-all">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Shell -->
+<footer class="w-full py-8 px-margin-desktop mt-auto flex flex-col md:flex-row justify-between items-center bg-surface-container-lowest dark:bg-inverse-surface border-t border-outline-variant">
+<div class="flex items-center gap-2 mb-4 md:mb-0">
+<span class="text-label-md font-label-md font-bold text-on-surface uppercase tracking-tight">IDA Electronic Voting System</span>
+<span class="text-label-sm font-label-sm text-secondary">|</span>
+<p class="text-label-sm font-label-sm text-on-surface-variant">© 2024 Igarra Development Association (IDA). Secure Electronic Voting System.</p>
+</div>
+<div class="flex gap-6">
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Election Integrity</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Support</a>
+</div>
+</footer>
+<!-- Add Candidate Modal -->
+<div class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6" id="candidateModal">
+<div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal()"></div>
+<div class="relative w-full max-w-2xl bg-white border-2 border-black p-10 transform scale-95 transition-transform duration-200">
+<div class="flex justify-between items-start mb-10">
+<div>
+<h2 class="text-headline-lg font-headline-lg mb-2">New Candidate Registration</h2>
+<p class="text-secondary">Provide verified credentials for the candidate ballot.</p>
+</div>
+<button class="text-black hover:text-primary transition-colors" onclick="toggleModal()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<form class="space-y-8">
+<div class="grid grid-cols-2 gap-8">
+<div class="flex flex-col">
+<label class="text-label-md font-label-md text-secondary uppercase mb-2">Full Name</label>
+<input class="border-b-2 border-black focus:border-primary-container focus:ring-0 outline-none p-3 text-body-md" placeholder="e.g. Samuel Okon" type="text"/>
+</div>
+<div class="flex flex-col">
+<label class="text-label-md font-label-md text-secondary uppercase mb-2">Candidate ID</label>
+<input class="border-b-2 border-outline-variant bg-surface-container-low p-3 text-body-md text-secondary" disabled="" type="text" value="IDA-2024-AUTO"/>
+</div>
+</div>
+<div class="flex flex-col">
+<label class="text-label-md font-label-md text-secondary uppercase mb-2">Target Position</label>
+<select class="border-2 border-black focus:border-primary-container focus:ring-0 outline-none p-3 text-body-md bg-white">
+<option>President</option>
+<option>Vice President</option>
+<option>Secretary</option>
+</select>
+</div>
+<div class="flex flex-col">
+<label class="text-label-md font-label-md text-secondary uppercase mb-2">Manifesto Summary</label>
+<textarea class="border-2 border-black focus:border-primary-container focus:ring-0 outline-none p-3 text-body-md resize-none" placeholder="Brief outline of the candidate's core mission..." rows="4"></textarea>
+</div>
+<div class="flex flex-col">
+<label class="text-label-md font-label-md text-secondary uppercase mb-2">Ballot Photo</label>
+<div class="border-2 border-dashed border-outline p-8 flex flex-col items-center justify-center gap-4 bg-surface-container-lowest">
+<span class="material-symbols-outlined text-4xl text-primary">cloud_upload</span>
+<p class="text-label-md font-label-md">DRAG IMAGE OR CLICK TO BROWSE</p>
+<p class="text-label-sm text-secondary">Accepted formats: JPG, PNG. Min 600x600px.</p>
+</div>
+</div>
+<div class="flex justify-end gap-4 mt-12">
+<button class="px-8 py-3 border-2 border-black text-black font-label-md text-label-md hover:bg-surface-container transition-all" onclick="toggleModal()" type="button">CANCEL</button>
+<button class="px-8 py-3 bg-primary-container text-on-primary-container border-2 border-black font-label-md text-label-md hover:bg-primary transition-all" type="submit">REGISTER CANDIDATE</button>
+</div>
+</form>
+</div>
+</div>
+<script>
+        function toggleModal() {
+            const modal = document.getElementById('candidateModal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.querySelector('.relative').classList.remove('scale-95');
+                }, 10);
+            } else {
+                modal.querySelector('.relative').classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 200);
+            }
+        }
+
+        // Micro-interaction: Active state scaling for nav items
+        const navItems = document.querySelectorAll('aside nav a');
+        navItems.forEach(item => {
+            item.addEventListener('mousedown', () => item.style.transform = 'scale(0.95)');
+            item.addEventListener('mouseup', () => item.style.transform = 'scale(1)');
+        });
+    </script>
+</body></html>

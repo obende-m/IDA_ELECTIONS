@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IDA Election Portal - Welcome</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#b2b3af",
+                        "secondary": "#5e5e5e",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#d4af37",
+                        "inverse-primary": "#e9c349",
+                        "inverse-surface": "#313030",
+                        "secondary-fixed": "#e2e2e2",
+                        "inverse-on-surface": "#f3f0ef",
+                        "tertiary": "#5d5f5b",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#e3e3de",
+                        "on-tertiary-fixed": "#1a1c19",
+                        "on-surface-variant": "#4d4635",
+                        "outline-variant": "#d0c5af",
+                        "primary": "#735c00",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-background": "#1c1b1b",
+                        "surface-bright": "#fcf9f8",
+                        "on-primary-fixed": "#241a00",
+                        "background": "#fcf9f8",
+                        "surface-container-high": "#eae7e7",
+                        "surface-container-highest": "#e5e2e1",
+                        "secondary-container": "#e2e2e2",
+                        "surface": "#fcf9f8",
+                        "surface-container": "#f0eded",
+                        "outline": "#7f7663",
+                        "on-secondary-fixed": "#1b1b1b",
+                        "tertiary-fixed-dim": "#c6c7c2",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-fixed-dim": "#c6c6c6",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#444542",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#474747",
+                        "on-secondary-container": "#646464",
+                        "surface-tint": "#735c00",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#ffe088",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f6f3f2",
+                        "primary-fixed-dim": "#e9c349",
+                        "on-tertiary-fixed-variant": "#454744",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e5e2e1",
+                        "on-primary-container": "#554300",
+                        "on-surface": "#1c1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "32px",
+                        "container-max": "1280px",
+                        "base": "8px",
+                        "margin-desktop": "64px",
+                        "margin-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .gold-border-focus:focus {
+            outline: 2px solid #d4af37;
+            outline-offset: 2px;
+        }
+        .canvas-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #fcf9f8;
+        }
+        .bento-card {
+            border: 1px solid #000000;
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .bento-card:hover {
+            border-color: #d4af37;
+        }
+        .button-shadow-active:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<div class="canvas-container">
+<!-- TopAppBar (Suppressed for focused landing, but logo is used in center) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-surface border-b-2 border-on-background">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">how_to_vote</span>
+<h1 class="text-label-md font-label-md font-bold text-primary">IDA PORTAL</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-secondary">notifications</span>
+<span class="material-symbols-outlined text-secondary">account_circle</span>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center pt-24 px-margin-mobile pb-12 overflow-y-auto">
+<!-- Hero Section -->
+<div class="w-full max-w-md flex flex-col items-center text-center space-y-8">
+<!-- Large Logo Anchor -->
+<div class="relative group">
+<div class="absolute -inset-4 bg-primary-container/10 rounded-full blur-xl group-hover:bg-primary-container/20 transition-all duration-500"></div>
+<img alt="IDA Official Logo" class="relative w-48 h-48 object-contain drop-shadow-xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0Bsn3URnlhxw6AoiOwrRUPqN1tHRqIkLbK4-K5lYzF7vt08qvTg9hocj_OUfeT4nqUJ54yDBCCSnm0zbU_2qq1jLIkHQpCoG6LMN9ELa-sABHbxNa7m6NCXKwykCiw-2Vh60JjllyewoKs86jskRlWpS6ynrSclFSDxWTe0TzofS1gpOT8FPpkjBK72_r0NYLfz3TB2eiucm7I__qjBjTMhqmbf1_sM4xJnioT8oDx9CFrrqdEtwYR_bgNb4_vpYwsV4"/>
+</div>
+<!-- Election Titles -->
+<div class="space-y-2">
+<p class="text-label-md font-label-md tracking-widest text-primary uppercase">Igarra Development Association</p>
+<h2 class="text-headline-xl font-headline-xl text-on-background leading-tight">2024 General Election</h2>
+</div>
+<!-- Welcome Message Card -->
+<div class="bento-card p-6 w-full text-left relative overflow-hidden">
+<div class="absolute top-0 right-0 w-2 h-full bg-primary-container"></div>
+<p class="text-body-lg font-body-lg text-on-surface-variant leading-relaxed">
+                        Welcome, Fellow Citizen. Your voice is the cornerstone of our community's future. Engage in the democratic process with security and confidence.
+                    </p>
+</div>
+<!-- Status Indicator -->
+<div class="flex items-center gap-3 px-4 py-2 bg-primary-container text-on-primary-container font-bold border border-on-background">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-on-primary-container opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-on-primary-container"></span>
+</span>
+<span class="text-label-md font-label-md tracking-wider">ELECTION STATUS: ACTIVE</span>
+</div>
+<!-- Primary CTA -->
+<div class="w-full pt-4">
+<button class="w-full py-5 bg-on-background text-on-primary font-bold text-headline-sm uppercase tracking-widest hover:bg-primary transition-all border-2 border-on-background hover:border-primary-container button-shadow-active gold-border-focus flex items-center justify-center gap-3">
+                        Start Voting
+                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span>
+</button>
+<p class="mt-4 text-label-sm font-label-sm text-secondary">Secure end-to-end encrypted session</p>
+</div>
+<!-- Trust Badges (Bento Style) -->
+<div class="grid grid-cols-2 gap-4 w-full">
+<div class="bento-card p-4 flex flex-col items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="text-label-sm font-label-sm text-on-background">Verified ID</span>
+</div>
+<div class="bento-card p-4 flex flex-col items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">gpp_good</span>
+<span class="text-label-sm font-label-sm text-on-background">Encrypted</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-8 px-margin-mobile bg-surface-container-lowest border-t border-outline-variant mt-auto">
+<div class="flex flex-col items-center text-center space-y-6">
+<div class="space-y-1">
+<p class="text-label-md font-label-md font-bold text-on-surface">Igarra Development Association (IDA)</p>
+<p class="text-body-md font-body-md text-secondary">Institutional Governance &amp; Civic Duty</p>
+</div>
+<div class="grid grid-cols-2 gap-x-8 gap-y-2">
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors underline" href="#">Privacy Policy</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors underline" href="#">Election Integrity</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors underline" href="#">Terms of Service</a>
+<a class="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors underline" href="#">Support</a>
+</div>
+<div class="pt-4 space-y-2">
+<p class="text-label-sm font-label-sm text-secondary">Contact IDA Official Secretariat:</p>
+<div class="flex items-center justify-center gap-4 text-primary">
+<span class="material-symbols-outlined">mail</span>
+<span class="material-symbols-outlined">call</span>
+<span class="material-symbols-outlined">location_on</span>
+</div>
+</div>
+<p class="text-label-sm font-label-sm text-secondary opacity-60">
+                    © 2024 Igarra Development Association (IDA). Secure Electronic Voting System.
+                </p>
+</div>
+</footer>
+</div>
+<!-- Micro-interaction for status pulse -->
+<script>
+        // Simple script to handle button interaction feedback
+        document.querySelector('button').addEventListener('click', function() {
+            this.innerHTML = `
+                <span class="flex items-center gap-3">
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Initializing...
+                </span>
+            `;
+            setTimeout(() => {
+                // Mock redirect
+                console.log("Redirecting to verification...");
+            }, 1000);
+        });
+    </script>
+</body></html>

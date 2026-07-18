@@ -1,0 +1,228 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  VOTER
+}
+
+enum ElectionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+enum TokenStatus {
+  ISSUED
+  CONSUMED
+  REVOKED
+}
+
+// Denormalized, cached on Voter for fast list/filter/reporting; kept in sync transactionally
+// whenever a VotingToken changes state. VotingToken rows remain the source of truth.
+enum VoterVotingStatus {
+  NOT_ISSUED
+  ISSUED
+  VOTED
+  REVOKED
+}
+
+model User {
+  id                      String        @id @default(uuid())
+  email                   String        @unique
+  passwordHash            String
+  fullName                String
+  role                    Role          @default(ADMIN)
+  isActive                Boolean       @default(true)
+  passwordResetTokenHash  String?       @unique
+  passwordResetExpiresAt  DateTime?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  sessions                Session[]
+  auditLogs               AuditLog[]
+  tokensIssued            VotingToken[] @relation("TokenIssuedBy")
+  tokensRevoked           VotingToken[] @relation("TokenRevokedBy")
+  electionsLocked         Election[]    @relation("ElectionLockedBy")
+  electionsUnlocked       Election[]    @relation("ElectionUnlockedBy")
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("sessions")
+}
+
+model Election {
+  id            String         @id @default(uuid())
+  title         String
+  year          Int            // Configurable election year (e.g. 2024, 2026)
+  description   String?
+  status        ElectionStatus @default(DRAFT)
+  startTime     DateTime?
+  endTime       DateTime?
+  settings      Json?          // Dynamic JSON settings
+
+  // Election Lock: an independent read-only guard, layered on top of `status`. Closing an
+  // election locks it automatically; a lock can also be triggered manually at any time (the
+  // dashboard's "Emergency Lock"). Only a SUPER_ADMIN may unlock. Full history of every
+  // lock/unlock cycle lives in AuditLog — these fields only reflect the current state.
+  isLocked      Boolean        @default(false)
+  lockedAt      DateTime?
+  lockedById    String?
+  lockedBy      User?          @relation("ElectionLockedBy", fields: [lockedById], references: [id], onDelete: SetNull)
+  unlockedAt    DateTime?
+  unlockedById  String?
+  unlockedBy    User?          @relation("ElectionUnlockedBy", fields: [unlockedById], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  positions     Position[]
+  voters        Voter[]
+  votingTokens  VotingToken[]
+  votes         Vote[]
+  auditLogs     AuditLog[]
+
+  @@map("elections")
+}
+
+model Position {
+  id            String      @id @default(uuid())
+  electionId    String
+  election      Election    @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  maxSelections Int         @default(1)
+  displayOrder  Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  candidates    Candidate[]
+  votes         Vote[]
+
+  @@map("positions")
+}
+
+model Candidate {
+  id           String    @id @default(uuid())
+  positionId   String
+  position     Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  electionId   String
+  name         String
+  bio          String?
+  photoUrl     String?
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  votes        Vote[]
+
+  @@map("candidates")
+}
+
+model Voter {
+  id               String            @id @default(uuid())
+  electionId       String
+  election         Election          @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  membershipNumber String            // e.g. IDA-000-000
+  fullName         String
+  email            String?
+  phone            String?
+  ward             String?           // e.g. Ward 01 - Okore
+  isActive         Boolean           @default(true)
+  votingStatus     VoterVotingStatus @default(NOT_ISSUED)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  tokens           VotingToken[]
+
+  @@unique([electionId, membershipNumber])
+  @@map("voters")
+}
+
+// Voting tokens are immutable once created: never mutated back to "unused" or reassigned.
+// Replacing a token means revoking the current one and issuing a brand new row, linked via
+// replacesTokenId so the full chain of custody survives for audit purposes.
+model VotingToken {
+  id              String       @id @default(uuid())
+  voterId         String
+  voter           Voter        @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  electionId      String
+  election        Election     @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  tokenHash       String       @unique  // sha256 of the raw token; used for O(1) verification lookups
+  tokenEncrypted  String       // AES-256-GCM ciphertext of the raw token; lets admins re-display/re-export a link without ever storing it in plaintext
+  status          TokenStatus  @default(ISSUED)
+
+  issuedAt        DateTime     @default(now())
+  issuedById      String?
+  issuedBy        User?        @relation("TokenIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  firstAccessedAt DateTime?
+  consumedAt      DateTime?
+
+  revokedAt       DateTime?
+  revokedById     String?
+  revokedBy       User?        @relation("TokenRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+
+  expiresAt       DateTime?
+
+  replacesTokenId String?      @unique
+  replacesToken   VotingToken? @relation("TokenChain", fields: [replacesTokenId], references: [id])
+  replacedBy      VotingToken? @relation("TokenChain")
+
+  @@index([voterId])
+  @@map("voting_tokens")
+}
+
+// SECURE BALLOT ENTITY
+// Contains absolutely zero voter references. This separation guarantees voter anonymity
+// in compliance with the security guidelines.
+model Vote {
+  id          String    @id @default(uuid())
+  electionId  String
+  election    Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  positionId  String
+  position    Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  timestamp   DateTime  @default(now())
+
+  @@map("votes")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String   // e.g. ADMIN_LOGIN, ELECTION_OPENED, VOTE_CAST
+  actorId    String?  // Can link to user id or voter session context
+  actorRole  Role?    // ADMIN or VOTER
+  actorName  String?  // Text description of the actor for readability
+  targetType String?  // e.g. CANDIDATE, VOTER, ELECTION
+  targetId   String?
+  metadata   Json?    // Detailed dynamic context (e.g. IPs, changes list)
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+  
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  electionId String?
+  election   Election? @relation(fields: [electionId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
