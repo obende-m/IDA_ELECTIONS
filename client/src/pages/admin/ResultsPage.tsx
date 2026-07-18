@@ -102,18 +102,6 @@ export function ResultsPage() {
             </div>
           </div>
         </div>
-
-        <div className="col-span-12 bg-surface-container border border-on-background p-8 flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-headline-sm font-headline-sm uppercase">Live Heatmap</h3>
-            <p className="text-label-md font-label-md text-secondary">Spatial Distribution of Voter Density</p>
-          </div>
-          <div className="h-64 bg-surface-container-high border border-outline-variant flex items-center justify-center">
-            <p className="text-label-md font-label-md text-secondary uppercase tracking-widest">
-              Ward map visualization renders here once geo data is wired up
-            </p>
-          </div>
-        </div>
       </div>
     </>
   );

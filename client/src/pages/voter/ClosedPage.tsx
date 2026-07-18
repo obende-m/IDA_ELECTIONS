@@ -37,7 +37,7 @@ export function ClosedPage() {
         <h1 className="text-headline-lg font-headline-lg uppercase mb-3">Voting Is Unavailable</h1>
         <p className="text-body-lg text-secondary max-w-sm">
           {reason ??
-            'The polling window for the 2024 General Election has closed. Thank you to everyone who participated. Official results will be published by the Electoral Committee once certified.'}
+            'The polling window for the 2026 General Election has closed. Thank you to everyone who participated. Official results will be published by the Electoral Committee once certified.'}
         </p>
 
         <div className="mt-10 p-4 border-l-4 border-primary bg-primary-container/10 max-w-sm text-left">
@@ -50,7 +50,7 @@ export function ClosedPage() {
 
       <footer className="py-8 px-margin-mobile border-t border-outline-variant text-center">
         <p className="text-label-sm font-label-sm text-secondary opacity-60">
-          © 2024 Igarra Development Association (IDA). Secure Electronic Voting System.
+          © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
         </p>
       </footer>
     </>

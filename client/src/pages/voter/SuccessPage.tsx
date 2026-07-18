@@ -44,7 +44,7 @@ export function SuccessPage() {
         </div>
 
         <p className="text-body-md text-secondary max-w-sm mt-8">
-          Thank you for participating in the 2024 Election cycle. Your contribution ensures the civic stability of our
+          Thank you for participating in the 2026 Election cycle. Your contribution ensures the civic stability of our
           association.
         </p>
 
@@ -76,7 +76,7 @@ export function SuccessPage() {
           ))}
         </div>
         <p className="text-label-sm font-label-sm text-secondary opacity-60">
-          © 2024 Igarra Development Association (IDA). Secure Electronic Voting System.
+          © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
         </p>
       </footer>
     </>

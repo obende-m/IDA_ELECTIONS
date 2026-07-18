@@ -29,7 +29,7 @@ export function WelcomePage() {
 
           <div className="space-y-2">
             <p className="text-label-md font-label-md tracking-widest text-primary uppercase">Igarra Development Association</p>
-            <h2 className="text-headline-xl font-headline-xl text-on-background leading-tight">2024 General Election</h2>
+            <h2 className="text-headline-xl font-headline-xl text-on-background leading-tight">2026 General Election</h2>
           </div>
 
           <div className="bento-card p-6 w-full text-left relative overflow-hidden">
@@ -90,7 +90,7 @@ export function WelcomePage() {
             </div>
           </div>
           <p className="text-label-sm font-label-sm text-secondary opacity-60">
-            © 2024 Igarra Development Association (IDA). Secure Electronic Voting System.
+            © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
           </p>
         </div>
       </footer>

@@ -32,7 +32,7 @@ export function VerifyPage() {
             <Icon name="shield" filled size={40} className="text-primary-container" />
           </div>
           <h1 className="text-headline-lg-mobile font-headline-lg-mobile text-on-surface mb-2">IDA ELECTION PORTAL</h1>
-          <p className="text-body-md text-on-surface-variant">2024 General Assembly Voting</p>
+          <p className="text-body-md text-on-surface-variant">2026 General Assembly Voting</p>
         </div>
 
         <div className="w-full max-w-sm space-y-8">
@@ -105,7 +105,7 @@ export function VerifyPage() {
             <span className="text-label-sm font-label-sm text-on-surface tracking-widest uppercase">AES-256 Encrypted Session</span>
           </div>
           <p className="text-[10px] text-on-surface-variant uppercase tracking-tighter opacity-60">
-            © 2024 Igarra Development Association (IDA). Official Electoral Commission.
+            © 2026 Igarra Development Association (IDA). Official Electoral Commission.
           </p>
         </div>
       </main>

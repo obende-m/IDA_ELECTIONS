@@ -104,7 +104,7 @@ export function LoginPage() {
 
       <footer className="py-6 text-center border-t border-outline-variant">
         <p className="text-label-sm font-label-sm text-secondary opacity-60">
-          © 2024 Igarra Development Association (IDA). Secure Electronic Voting System.
+          © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
         </p>
       </footer>
     </div>

@@ -96,7 +96,7 @@ export function ReviewPage() {
           </Button>
         </div>
 
-        <p className="text-label-sm font-label-sm text-secondary opacity-60 mt-8">© 2024 Igarra Development Association (IDA)</p>
+        <p className="text-label-sm font-label-sm text-secondary opacity-60 mt-8">© 2026 Igarra Development Association (IDA)</p>
       </main>
     </>
   );

@@ -42,7 +42,7 @@ export function AdminLayout() {
             </div>
             <div>
               <p className="text-headline-sm font-headline-sm font-bold text-primary">Admin Portal</p>
-              <p className="text-label-sm font-label-sm text-secondary uppercase tracking-widest">Election 2024</p>
+              <p className="text-label-sm font-label-sm text-secondary uppercase tracking-widest">Election 2026</p>
             </div>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function AdminLayout() {
       <footer className="ml-64 bg-surface-container-lowest border-t border-outline-variant py-4 px-margin-desktop">
         <div className="flex flex-col md:flex-row flex-wrap justify-between items-center gap-x-6 gap-y-3">
           <p className="text-label-sm font-label-sm text-secondary text-center md:text-left">
-            © 2024 Igarra Development Association (IDA). Secure Electronic Voting System.
+            © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
             <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">

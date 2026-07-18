@@ -162,7 +162,7 @@ export function SelectCandidatePage() {
 
       <footer className="mb-28 text-center px-margin-mobile pt-8">
         <p className="font-label-sm text-label-sm text-secondary opacity-60">
-          © 2024 Igarra Development Association (IDA).
+          © 2026 Igarra Development Association (IDA).
           <br />
           Secure Electronic Voting System.
         </p>
