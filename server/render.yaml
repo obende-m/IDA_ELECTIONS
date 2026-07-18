@@ -8,8 +8,12 @@ services:
     # live (a voter hitting a sleeping backend mid-vote would be a bad time to find out).
     plan: free
     buildCommand: npm install && npm run build
-    # migrate deploy only applies pending migrations — safe/idempotent to run on every deploy.
-    startCommand: npx prisma migrate deploy && npm start
+    # migrate deploy only applies pending migrations, and db seed upserts the bootstrap admin by
+    # email (see prisma/seed.ts) — both are safe/idempotent to run on every deploy, not just the
+    # first one. db seed only sets the password at creation time, though: changing
+    # SEED_ADMIN_PASSWORD after the account already exists won't retroactively update it — use the
+    # app's own Forgot Password flow for that instead.
+    startCommand: npx prisma migrate deploy && npx prisma db seed && npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
