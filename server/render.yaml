@@ -7,7 +7,11 @@ services:
     # cold-starts (30-60+s) on the next request. Switch to `starter` before the real election goes
     # live (a voter hitting a sleeping backend mid-vote would be a bad time to find out).
     plan: free
-    buildCommand: npm install && npm run build
+    # --include=dev: NODE_ENV=production (below) makes plain `npm install` skip devDependencies,
+    # but tsc needs typescript + every @types/* package to actually type-check the build. This is
+    # a build-only container on Render's native Node runtime (not a separate build/run split), so
+    # devDependencies sitting unused in node_modules afterward costs nothing.
+    buildCommand: npm install --include=dev && npm run build
     # migrate deploy only applies pending migrations, and db seed upserts the bootstrap admin by
     # email (see prisma/seed.ts) — both are safe/idempotent to run on every deploy, not just the
     # first one. db seed only sets the password at creation time, though: changing
