@@ -1,11 +1,19 @@
 import { useState } from 'react';
 import { Badge, Button, DataTable, Field, Icon, SelectField, useToast, type DataTableColumn } from '../../components/ui';
-import { useIssueToken, useRevokeToken, useReplaceToken, useSetVoterActive, useVotersList } from '../../features/voters/useVoters';
+import {
+  useDeleteVoter,
+  useIssueToken,
+  useRevokeToken,
+  useReplaceToken,
+  useSetVoterActive,
+  useVotersList,
+} from '../../features/voters/useVoters';
 import { votersApi } from '../../features/voters/votersApi';
 import { VoterFormModal } from '../../features/voters/VoterFormModal';
 import { ImportVotersModal } from '../../features/voters/ImportVotersModal';
 import { useCurrentElection } from '../../features/elections/useElection';
 import { LockBanner } from '../../features/elections/LockBanner';
+import { cn } from '../../lib/cn';
 import type { Voter, VotingStatus } from '../../features/voters/types';
 
 const VOTING_STATUS_LABEL: Record<VotingStatus, string> = {
@@ -40,9 +48,32 @@ export function VotersPage() {
   const isLocked = election?.isLocked ?? false;
 
   const setActive = useSetVoterActive();
+  const deleteVoter = useDeleteVoter();
   const issueToken = useIssueToken();
   const revokeToken = useRevokeToken();
   const replaceToken = useReplaceToken();
+
+  const handleToggleActive = async (voter: Voter) => {
+    const nextActive = !voter.isActive;
+    await setActive.mutateAsync({ id: voter.id, isActive: nextActive });
+    toast({
+      title: nextActive ? 'Voter activated' : 'Voter deactivated',
+      description: nextActive
+        ? `${voter.fullName} can now be issued a voting token.`
+        : `${voter.fullName} can no longer be issued a voting token.`,
+      variant: 'success',
+    });
+  };
+
+  const handleDelete = async (voter: Voter) => {
+    if (!window.confirm(`Delete ${voter.fullName}? This cannot be undone.`)) return;
+    try {
+      await deleteVoter.mutateAsync(voter.id);
+      toast({ title: 'Voter deleted', description: `${voter.fullName} was removed from the roll.`, variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Could not delete voter', description: err instanceof Error ? err.message : undefined, variant: 'error' });
+    }
+  };
 
   const handleCopyLink = async (voter: Voter) => {
     try {
@@ -133,13 +164,30 @@ export function VotersPage() {
             <Icon name="edit" size={18} />
           </button>
           <button
-            className="w-9 h-9 flex items-center justify-center border border-on-background hover:bg-surface-container-high disabled:opacity-40 disabled:pointer-events-none"
+            className={cn(
+              'w-9 h-9 flex items-center justify-center border transition-colors disabled:opacity-40 disabled:pointer-events-none',
+              v.isActive
+                ? 'border-error text-error hover:bg-error hover:text-on-error'
+                : 'border-primary text-primary hover:bg-primary hover:text-on-primary'
+            )}
             aria-label={v.isActive ? `Deactivate ${v.fullName}` : `Activate ${v.fullName}`}
-            disabled={isLocked}
-            onClick={() => setActive.mutate({ id: v.id, isActive: !v.isActive })}
+            title={v.isActive ? 'Deactivate voter' : 'Activate voter'}
+            disabled={isLocked || setActive.isPending}
+            onClick={() => handleToggleActive(v)}
           >
             <Icon name={v.isActive ? 'person_off' : 'how_to_reg'} size={18} />
           </button>
+          {v.votingStatus === 'NOT_ISSUED' && (
+            <button
+              className="w-9 h-9 flex items-center justify-center border border-error text-error hover:bg-error hover:text-on-error transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              aria-label={`Delete ${v.fullName}`}
+              title="Delete voter"
+              disabled={isLocked || deleteVoter.isPending}
+              onClick={() => handleDelete(v)}
+            >
+              <Icon name="delete" size={18} />
+            </button>
+          )}
 
           {v.votingStatus === 'NOT_ISSUED' && (
             <Button size="sm" variant="primary" disabled={isLocked} onClick={() => handleIssue(v)}>

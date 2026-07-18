@@ -171,6 +171,35 @@ export async function setVoterActive(
   return updated;
 }
 
+/**
+ * Only allowed while a voter has never had a token issued (votingStatus NOT_ISSUED) — once a
+ * token exists, VotingToken/Vote rows cascade-delete with the Voter (onDelete: Cascade in the
+ * schema), which would destroy real election history. Deactivate is the correct action past that
+ * point; this is only for cleaning up a voter added by mistake before anything happened to them.
+ */
+export async function deleteVoter(electionId: string, voterId: string, actor: Actor, req?: import('express').Request) {
+  await assertElectionNotLocked(electionId);
+  const voter = await getVoter(electionId, voterId);
+
+  if (voter.votingStatus !== 'NOT_ISSUED') {
+    throw new AppError('This voter has already been issued a voting token and cannot be deleted — deactivate them instead.', 409);
+  }
+
+  await prisma.voter.delete({ where: { id: voter.id } });
+
+  await writeAuditLog({
+    action: 'VOTER_DELETED',
+    actorId: actor.id,
+    actorRole: actor.role,
+    actorName: actor.fullName,
+    targetType: 'VOTER',
+    targetId: voter.id,
+    electionId,
+    metadata: { fullName: voter.fullName, membershipNumber: voter.membershipNumber },
+    req,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Token lifecycle (immutable: issue, revoke, replace-by-issuing-new — never mutate in place)
 // ---------------------------------------------------------------------------

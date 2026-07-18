@@ -18,6 +18,7 @@ export const votersApi = {
   create: (data: VoterFormValues) => apiRequest<{ voter: Voter }>('/voters', { method: 'POST', body: data }),
   update: (id: string, data: Partial<VoterFormValues>) =>
     apiRequest<{ voter: Voter }>(`/voters/${id}`, { method: 'PATCH', body: data }),
+  remove: (id: string) => apiRequest<void>(`/voters/${id}`, { method: 'DELETE' }),
   activate: (id: string) => apiRequest<{ voter: Voter }>(`/voters/${id}/activate`, { method: 'POST' }),
   deactivate: (id: string) => apiRequest<{ voter: Voter }>(`/voters/${id}/deactivate`, { method: 'POST' }),
   issueToken: (id: string) => apiRequest<{ votingLink: string }>(`/voters/${id}/token/issue`, { method: 'POST' }),

@@ -21,6 +21,8 @@ router.get('/export', asyncHandler(voterController.exportVotersCsv));
 router.get('/export/links', asyncHandler(voterController.exportVotingLinksCsv));
 router.get('/:id', asyncHandler(voterController.getOne));
 router.patch('/:id', validateBody(updateVoterSchema), asyncHandler(voterController.update));
+// Only succeeds while the voter has never had a token issued — see voter.service.ts's deleteVoter.
+router.delete('/:id', asyncHandler(voterController.remove));
 router.post('/:id/activate', asyncHandler(voterController.activate));
 router.post('/:id/deactivate', asyncHandler(voterController.deactivate));
 router.get('/:id/token/link', asyncHandler(voterController.votingLink));

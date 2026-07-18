@@ -33,6 +33,11 @@ export function useUpdateVoter() {
   });
 }
 
+export function useDeleteVoter() {
+  const invalidate = useInvalidateVoters();
+  return useMutation({ mutationFn: (id: string) => votersApi.remove(id), onSuccess: invalidate });
+}
+
 export function useSetVoterActive() {
   const invalidate = useInvalidateVoters();
   return useMutation({

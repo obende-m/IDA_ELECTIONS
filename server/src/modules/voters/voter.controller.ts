@@ -38,6 +38,12 @@ export async function update(req: Request, res: Response) {
   res.json({ voter });
 }
 
+export async function remove(req: Request, res: Response) {
+  const election = await getCurrentElection();
+  await voterService.deleteVoter(election.id, req.params.id, actorFromRequest(req), req);
+  res.status(204).send();
+}
+
 export async function activate(req: Request, res: Response) {
   const election = await getCurrentElection();
   const voter = await voterService.setVoterActive(election.id, req.params.id, true, actorFromRequest(req), req);
