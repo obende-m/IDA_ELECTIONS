@@ -3,7 +3,10 @@ services:
     name: ida-voting-server
     runtime: node
     rootDir: server
-    plan: starter
+    # Free tier for now — no card required, but the service spins down after ~15 min idle and
+    # cold-starts (30-60+s) on the next request. Switch to `starter` before the real election goes
+    # live (a voter hitting a sleeping backend mid-vote would be a bad time to find out).
+    plan: free
     buildCommand: npm install && npm run build
     # migrate deploy only applies pending migrations — safe/idempotent to run on every deploy.
     startCommand: npx prisma migrate deploy && npm start
