@@ -4,6 +4,7 @@ import { Button, Icon } from '../../components/ui';
 import { MobileTopBar } from '../../components/voter/MobileTopBar';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
 import { cn } from '../../lib/cn';
+import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 
 /** Ported from candidate_selection_mobile/code.html, now driven by the real fetched ballot and accumulating real selections. */
 export function SelectCandidatePage() {
@@ -21,13 +22,7 @@ export function SelectCandidatePage() {
   }, [positionId, selections]);
 
   if (!session || !ballot) {
-    return (
-      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center min-h-screen">
-        <Icon name="error" size={40} className="text-secondary mb-4" />
-        <h1 className="text-headline-lg font-headline-lg uppercase mb-3">No Active Ballot</h1>
-        <p className="text-body-md text-secondary max-w-sm">Please start again from your personal voting link.</p>
-      </main>
-    );
+    return <VotingLinkRequiredNotice />;
   }
 
   if (!position) {

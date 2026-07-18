@@ -3,43 +3,44 @@ import { StatCard, StatusPill, Icon, SelectField, useToast } from '../../compone
 import { useCurrentElection, useLockElection } from '../../features/elections/useElection';
 import { LockBanner } from '../../features/elections/LockBanner';
 import { LockReasonModal } from '../../features/elections/LockReasonModal';
+import { useAnalytics } from '../../features/analytics/useAnalytics';
+import type { RecentActivityEntry } from '../../features/analytics/types';
 
-const HOURLY_ACTIVITY = [
-  { time: '08:00 AM', value: 120, height: '25%' },
-  { time: '', value: 450, height: '40%' },
-  { time: '10:00 AM', value: 890, height: '60%' },
-  { time: '', value: 1240, height: '83%', accent: true },
-  { time: '12:00 PM', value: 1100, height: '80%' },
-  { time: '', value: 950, height: '75%' },
-  { time: '02:00 PM', value: 820, height: '66%' },
-  { time: '04:00 PM', value: 600, height: '50%' },
-];
+const ACTIVITY_DESCRIPTIONS: Record<string, string> = {
+  VOTE_CAST: 'A ballot was cast.',
+  TOKEN_ISSUED: 'A voting token was issued.',
+  TOKEN_REPLACEMENT_ISSUED: 'A voting token was reissued.',
+  VOTER_IMPORT_COMPLETED: 'Voter roster import completed.',
+  ELECTION_OPENED: 'Election opened for voting.',
+  ELECTION_PAUSED: 'Election paused.',
+  ELECTION_RESUMED: 'Election resumed.',
+  ELECTION_CLOSED: 'Election closed.',
+  ELECTION_LOCKED: 'Election locked.',
+  ELECTION_UNLOCKED: 'Election unlocked.',
+};
 
-const WARD_LEADERBOARD = [
-  { ward: 'Ward 01 - Okore', turnout: '88% Turnout' },
-  { ward: 'Ward 04 - Udama', turnout: '76% Turnout' },
-  { ward: 'Ward 11 - Somorika', turnout: '72% Turnout' },
-];
+function describeActivity(entry: RecentActivityEntry): string {
+  const base = ACTIVITY_DESCRIPTIONS[entry.action] ?? entry.action;
+  return entry.actorName ? `${base} (${entry.actorName})` : base;
+}
 
-const SYSTEM_HEALTH = ['Cloud Nodes: 12/12 Online', 'Encryption Level: AES-256', 'Database Replication: Confirmed'];
+function formatTimeRemaining(endTime: string | null): string {
+  if (!endTime) return '—';
+  const diffMs = new Date(endTime).getTime() - Date.now();
+  if (diffMs <= 0) return '00:00:00';
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds].map((n) => String(n).padStart(2, '0')).join(':');
+}
 
-const RECENT_AUDIT = [
-  { time: '14:22:04', text: 'Voter #ID8829 validated successfully.' },
-  { time: '14:21:48', text: 'Admin session extended (Admin_Root_01).' },
-  { time: '14:21:30', text: 'Bulk export initiated by Regional Head.' },
-];
-
-const QUICK_ACTIONS = [
-  { icon: 'add_circle', label: 'Register New Voter' },
-  { icon: 'description', label: 'Export Hourly Report' },
-  { icon: 'history', label: 'View System Audit' },
-];
-
-/** Ported from admin_dashboard_ida_election_portal/code.html. Metrics are placeholder data until Module 5 wires live aggregation. */
+/** Every statistic here comes from useAnalytics() — the same hook and endpoint ResultsPage consumes, so there's one source of truth for election numbers. */
 export function DashboardPage() {
   const { toast } = useToast();
-  const { data } = useCurrentElection();
-  const election = data?.election;
+  const { data: electionData } = useCurrentElection();
+  const election = electionData?.election;
+  const { data: analytics } = useAnalytics();
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const lockElection = useLockElection();
 
@@ -49,6 +50,8 @@ export function DashboardPage() {
     setLockModalOpen(false);
   };
 
+  const maxHourly = Math.max(1, ...(analytics?.timeline.map((t) => t.ballotsCast) ?? [0]));
+
   return (
     <>
       {election && <LockBanner election={election} />}
@@ -56,33 +59,35 @@ export function DashboardPage() {
       <section className="flex flex-col md:flex-row justify-between items-end border-b-2 border-on-background pb-6">
         <div>
           <h1 className="font-headline-xl text-headline-xl uppercase">Dashboard</h1>
-          <p className="font-body-lg text-body-lg text-secondary">Monitoring real-time participation across 12 wards.</p>
+          <p className="font-body-lg text-body-lg text-secondary">Real-time election participation monitoring.</p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <StatusPill
             label={`Election Status: ${election?.status ?? '—'}`}
             live={election?.status === 'ACTIVE'}
           />
-          <div className="text-headline-sm font-headline-sm text-on-background tracking-tighter">Polls Close: 06:00 PM GMT</div>
+          <div className="text-headline-sm font-headline-sm text-on-background tracking-tighter">
+            Time Remaining: {formatTimeRemaining(analytics?.election.endTime ?? null)}
+          </div>
         </div>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
-        <StatCard label="Registered Voters" value="12,458" icon="group_add" helpText="+2.4% from last hour" />
-        <StatCard label="Votes Cast" value="8,294" icon="how_to_vote" helpText="Total verified ballots" />
+        <StatCard label="Registered Voters" value={(analytics?.registeredVoters ?? 0).toLocaleString()} icon="group_add" helpText="Total in this election" />
+        <StatCard label="Ballots Cast" value={(analytics?.ballotsCast ?? 0).toLocaleString()} icon="how_to_vote" helpText="Verified submissions" />
         <StatCard
           label="Turnout %"
           value={
             <>
-              <span>66.5%</span>
+              <span>{(analytics?.turnoutPct ?? 0).toFixed(1)}%</span>
               <div className="w-full h-2 bg-surface-container mt-2">
-                <div className="h-full bg-primary" style={{ width: '66.5%' }} />
+                <div className="h-full bg-primary" style={{ width: `${analytics?.turnoutPct ?? 0}%` }} />
               </div>
             </>
           }
           icon="percent"
         />
-        <StatCard label="Time Remaining" value="04:22:12" icon="timer" helpText="System locked at 18:00" inverse />
+        <StatCard label="Time Remaining" value={formatTimeRemaining(analytics?.election.endTime ?? null)} icon="timer" helpText="Until polls close" inverse />
       </section>
 
       <div className="bento-grid">
@@ -90,39 +95,47 @@ export function DashboardPage() {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-headline-sm text-headline-sm uppercase">Live Voting Activity</h3>
-              <p className="text-label-md font-label-md text-secondary">Hourly voting volume across all digital channels</p>
+              <p className="text-label-md font-label-md text-secondary">Hourly voting volume since the election opened</p>
             </div>
             <SelectField aria-label="Time range" defaultValue="realtime" className="mb-0">
               <option value="realtime">Real-time (Auto)</option>
-              <option value="6h">Past 6 Hours</option>
-              <option value="day">All Day</option>
             </SelectField>
           </div>
-          <div className="relative h-64 w-full bg-surface-container flex items-end justify-between px-8 py-4 border border-outline-variant overflow-hidden">
-            <div
-              className="absolute inset-0 opacity-10 pointer-events-none"
-              style={{
-                backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-                backgroundSize: '40px 40px',
-              }}
-            />
-            {HOURLY_ACTIVITY.map((bar, i) => (
-              <div
-                key={i}
-                className={`w-12 relative group ${bar.accent ? 'bg-primary' : 'bg-on-background'}`}
-                style={{ height: bar.height }}
-              >
-                <div className="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">
-                  {bar.value}
-                </div>
+          {analytics && analytics.timeline.length > 0 ? (
+            <>
+              <div className="relative h-64 w-full bg-surface-container flex items-end justify-between px-8 py-4 border border-outline-variant overflow-hidden">
+                <div
+                  className="absolute inset-0 opacity-10 pointer-events-none"
+                  style={{
+                    backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
+                    backgroundSize: '40px 40px',
+                  }}
+                />
+                {analytics.timeline.map((point) => (
+                  <div
+                    key={point.hourBucket}
+                    className="w-12 relative group bg-on-background"
+                    style={{ height: `${Math.max(4, (point.ballotsCast / maxHourly) * 100)}%` }}
+                  >
+                    <div className="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">
+                      {point.ballotsCast}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="flex justify-between px-8 text-label-sm font-label-sm text-secondary uppercase tracking-widest">
-            {HOURLY_ACTIVITY.filter((b) => b.time).map((b) => (
-              <span key={b.time}>{b.time}</span>
-            ))}
-          </div>
+              <div className="flex justify-between px-8 text-label-sm font-label-sm text-secondary uppercase tracking-widest">
+                {analytics.timeline.map((point) => (
+                  <span key={point.hourBucket}>
+                    {new Date(point.hourBucket).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="h-64 w-full bg-surface-container border border-outline-variant flex items-center justify-center">
+              <p className="text-label-md font-label-md text-secondary uppercase tracking-widest">No voting activity yet</p>
+            </div>
+          )}
         </div>
 
         <div className="col-span-12 lg:col-span-4 bg-surface-container border border-on-background p-8 flex flex-col gap-6">
@@ -131,7 +144,11 @@ export function DashboardPage() {
             <p className="text-label-md font-label-md text-secondary">Authorized Administrative Commands</p>
           </div>
           <div className="flex flex-col gap-4">
-            {QUICK_ACTIONS.map((action) => (
+            {[
+              { icon: 'add_circle', label: 'Register New Voter' },
+              { icon: 'description', label: 'Export Hourly Report' },
+              { icon: 'history', label: 'View System Audit' },
+            ].map((action) => (
               <button
                 key={action.label}
                 className="flex items-center justify-between p-4 bg-surface border border-on-background hover:bg-on-background hover:text-on-primary transition-all group"
@@ -177,38 +194,19 @@ export function DashboardPage() {
           onConfirm={handleLock}
         />
 
-        <div className="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-surface border border-on-background p-6">
-            <h4 className="text-label-md font-label-md uppercase text-secondary mb-4">Ward Leaderboard</h4>
-            <div className="space-y-3">
-              {WARD_LEADERBOARD.map((w) => (
-                <div key={w.ward} className="flex justify-between items-center border-b border-surface-container-high pb-2">
-                  <span className="text-body-md">{w.ward}</span>
-                  <span className="text-label-md font-bold">{w.turnout}</span>
+        <div className="col-span-12 bg-surface border border-on-background p-6">
+          <h4 className="text-label-md font-label-md uppercase text-secondary mb-4">Recent Activity</h4>
+          <div className="text-label-sm font-label-sm space-y-2">
+            {analytics && analytics.recentActivity.length > 0 ? (
+              analytics.recentActivity.map((entry, i) => (
+                <div key={`${entry.timestamp}-${i}`} className="text-secondary">
+                  <span className="text-on-background font-bold">[{new Date(entry.timestamp).toLocaleTimeString()}]</span>{' '}
+                  {describeActivity(entry)}
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="bg-surface border border-on-background p-6">
-            <h4 className="text-label-md font-label-md uppercase text-secondary mb-4">System Health</h4>
-            <div className="space-y-4">
-              {SYSTEM_HEALTH.map((item) => (
-                <div key={item} className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-body-md">{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="bg-surface border border-on-background p-6">
-            <h4 className="text-label-md font-label-md uppercase text-secondary mb-4">Recent Audit Log</h4>
-            <div className="text-label-sm font-label-sm space-y-2">
-              {RECENT_AUDIT.map((entry) => (
-                <div key={entry.time} className="text-secondary">
-                  <span className="text-on-background font-bold">[{entry.time}]</span> {entry.text}
-                </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <p className="text-secondary italic">No activity recorded yet.</p>
+            )}
           </div>
         </div>
       </div>

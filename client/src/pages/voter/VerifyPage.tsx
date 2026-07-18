@@ -5,6 +5,7 @@ import { MobileTopBar } from '../../components/voter/MobileTopBar';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
 import { votingApi } from '../../features/voting/votingApi';
 import { ApiError } from '../../lib/apiClient';
+import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 
 /**
  * Identity confirmation for a voter who arrived via their personal /vote/:token link (see
@@ -18,15 +19,7 @@ export function VerifyPage() {
   const [loading, setLoading] = useState(false);
 
   if (!session) {
-    return (
-      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center min-h-screen">
-        <Icon name="error" size={40} className="text-secondary mb-4" />
-        <h1 className="text-headline-lg font-headline-lg uppercase mb-3">No Active Voting Link</h1>
-        <p className="text-body-md text-secondary max-w-sm">
-          Please open the personal voting link sent to you by the Electoral Committee to begin.
-        </p>
-      </main>
-    );
+    return <VotingLinkRequiredNotice />;
   }
 
   return (
@@ -79,6 +72,11 @@ export function VerifyPage() {
                 setBallot(ballot);
                 navigate(`/vote/select/${ballot.positions[0].id}`);
               } catch (err) {
+                if (err instanceof ApiError && err.status === 409) {
+                  clearSession();
+                  navigate('/vote/closed', { state: { reason: err.message } });
+                  return;
+                }
                 toast({
                   title: 'Could not load your ballot',
                   description: err instanceof ApiError ? err.message : 'Please try again in a moment.',

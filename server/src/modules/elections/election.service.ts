@@ -3,6 +3,7 @@ import { getCurrentElection } from '../../lib/election';
 import { AppError } from '../../middleware/errorHandler';
 import { writeAuditLog } from '../../lib/audit';
 import { assertElectionNotLocked } from '../../lib/electionLock';
+import { certifyElectionResults } from '../analytics/analytics.service';
 import type { Actor } from '../../lib/actor';
 import type { UpdateElectionInput } from './election.validation';
 
@@ -156,16 +157,25 @@ export async function archiveElection(actor: Actor, req?: import('express').Requ
   return updated;
 }
 
-/** Ends voting and automatically locks the election — the point at which results become final. */
+/**
+ * Ends voting and automatically locks the election — the point at which results become final.
+ * Locking the election row and certifying its final analytics snapshot happen in one transaction
+ * (mirrors castVote's mutate-in-tx-then-log-after-commit pattern) so it's never possible to end up
+ * with a CLOSED election and no certified snapshot from a mid-write failure.
+ */
 export async function closeElection(actor: Actor, req?: import('express').Request) {
   const election = await getCurrentElection();
   if (election.status === 'CLOSED') {
     throw new AppError('This election is already closed.', 409);
   }
 
-  const updated = await prisma.election.update({
-    where: { id: election.id },
-    data: { status: 'CLOSED', isLocked: true, lockedAt: new Date(), lockedById: actor.id },
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.election.update({
+      where: { id: election.id },
+      data: { status: 'CLOSED', isLocked: true, lockedAt: new Date(), lockedById: actor.id },
+    });
+    await certifyElectionResults(tx, election.id, actor.id);
+    return result;
   });
 
   await writeAuditLog({
@@ -187,6 +197,16 @@ export async function closeElection(actor: Actor, req?: import('express').Reques
     targetId: election.id,
     electionId: election.id,
     metadata: { reason: 'election_closed' },
+    req,
+  });
+  await writeAuditLog({
+    action: 'ELECTION_RESULTS_CERTIFIED',
+    actorId: actor.id,
+    actorRole: actor.role,
+    actorName: actor.fullName,
+    targetType: 'ELECTION',
+    targetId: election.id,
+    electionId: election.id,
     req,
   });
 

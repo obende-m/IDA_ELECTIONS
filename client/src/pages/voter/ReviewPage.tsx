@@ -5,6 +5,7 @@ import { MobileTopBar } from '../../components/voter/MobileTopBar';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
 import { votingApi } from '../../features/voting/votingApi';
 import { ApiError } from '../../lib/apiClient';
+import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 
 /** Ported from review_confirm_vote_mobile/code.html; submits the accumulated selections via the atomic vote-cast transaction. */
 export function ReviewPage() {
@@ -14,13 +15,7 @@ export function ReviewPage() {
   const [submitting, setSubmitting] = useState(false);
 
   if (!session || !ballot) {
-    return (
-      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center min-h-screen">
-        <Icon name="error" size={40} className="text-secondary mb-4" />
-        <h1 className="text-headline-lg font-headline-lg uppercase mb-3">No Active Ballot</h1>
-        <p className="text-body-md text-secondary max-w-sm">Please start again from your personal voting link.</p>
-      </main>
-    );
+    return <VotingLinkRequiredNotice />;
   }
 
   const handleCastVote = async () => {
@@ -32,7 +27,10 @@ export function ReviewPage() {
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Please try again in a moment.';
       toast({ title: 'Could not cast your vote', description: message, variant: 'error' });
-      if (err instanceof ApiError && (err.status === 410 || err.status === 409)) {
+      if (err instanceof ApiError && (err.status === 409 || err.status === 423)) {
+        clearSession();
+        navigate('/vote/closed', { state: { reason: err.message } });
+      } else if (err instanceof ApiError && err.status === 410) {
         clearSession();
         navigate('/vote');
       }

@@ -4,7 +4,6 @@ export const createCandidateSchema = z.object({
   positionId: z.string().uuid('A valid position must be selected'),
   name: z.string().trim().min(1, 'Name is required'),
   bio: z.string().trim().optional().or(z.literal('')),
-  photoUrl: z.union([z.string().trim().url('Enter a valid URL'), z.literal('')]).optional(),
   displayOrder: z.coerce.number().int().min(0).optional(),
 });
 

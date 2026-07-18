@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: ida-voting-server
+    runtime: node
+    rootDir: server
+    plan: starter
+    buildCommand: npm install && npm run build
+    # migrate deploy only applies pending migrations — safe/idempotent to run on every deploy.
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: VOTING_LINK_BASE_URL
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: COOKIE_SAME_SITE
+        sync: false
+      - key: DEFAULT_ELECTION_TITLE
+        sync: false
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_NAME
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_PHOTOS_BUCKET
+        sync: false

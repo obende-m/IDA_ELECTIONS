@@ -37,3 +37,13 @@ export async function writeAuditLog(entry: AuditLogEntry): Promise<void> {
     },
   });
 }
+
+/**
+ * Individual voter identity must never surface outside the Vote Records module (see
+ * voting.service.ts) — every other consumer of AuditLog rows (analytics.service.ts's
+ * recentActivity, report.service.ts's audit report, audit.service.ts's viewer) must redact the
+ * actor's name whenever the action was performed by a voter rather than an admin.
+ */
+export function redactActorName(actorName: string | null, actorRole: Role | null): string | null {
+  return actorRole === 'VOTER' ? null : actorName;
+}

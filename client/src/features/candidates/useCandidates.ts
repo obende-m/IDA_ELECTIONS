@@ -30,3 +30,16 @@ export function useDeleteCandidate() {
   const invalidate = useInvalidateCandidates();
   return useMutation({ mutationFn: (id: string) => candidatesApi.remove(id), onSuccess: invalidate });
 }
+
+export function useUploadCandidatePhoto() {
+  const invalidate = useInvalidateCandidates();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => candidatesApi.uploadPhoto(id, file),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRemoveCandidatePhoto() {
+  const invalidate = useInvalidateCandidates();
+  return useMutation({ mutationFn: (id: string) => candidatesApi.removePhoto(id), onSuccess: invalidate });
+}

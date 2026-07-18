@@ -25,14 +25,20 @@ export async function createPosition(electionId: string, input: CreatePositionIn
 
   const displayOrder = input.displayOrder ?? (await prisma.position.count({ where: { electionId } }));
 
-  const position = await prisma.position.create({
-    data: {
-      electionId,
-      title: input.title,
-      description: input.description || undefined,
-      maxSelections: input.maxSelections,
-      displayOrder,
-    },
+  const position = await prisma.$transaction(async (tx) => {
+    const created = await tx.position.create({
+      data: {
+        electionId,
+        title: input.title,
+        description: input.description || undefined,
+        maxSelections: input.maxSelections,
+        displayOrder,
+      },
+    });
+    // Paired 1:1 tally row, created here (not lazily) so analytics.service.ts never has to
+    // special-case "position exists but has no tally row yet" — see analytics.service.ts.
+    await tx.positionTally.create({ data: { electionId, positionId: created.id } });
+    return created;
   });
 
   await writeAuditLog({

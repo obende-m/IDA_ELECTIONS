@@ -13,3 +13,16 @@ export const uploadSpreadsheet = multer({
     cb(null, true);
   },
 });
+
+const ALLOWED_IMAGE_MIMETYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+export const uploadImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_IMAGE_MIMETYPES.has(file.mimetype)) {
+      return cb(new AppError('Only JPG, PNG, or WEBP images are accepted', 400));
+    }
+    cb(null, true);
+  },
+});

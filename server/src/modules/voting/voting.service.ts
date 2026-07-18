@@ -3,6 +3,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { writeAuditLog } from '../../lib/audit';
 import { generateVoteReferenceNumber } from '../../lib/voteReference';
 import { getValidToken } from '../voters/voter.service';
+import { recordVoteInTallies } from '../analytics/analytics.service';
 import type { CastVoteInput, VoteRecordsQuery } from './voting.validation';
 import type { Actor } from '../../lib/actor';
 
@@ -74,6 +75,7 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
     }
   }
 
+  const castAt = new Date();
   const referenceNumber = generateVoteReferenceNumber();
   const voteRows = input.selections.flatMap((selection) =>
     selection.candidateIds.map((candidateId) => ({
@@ -82,13 +84,16 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
       candidateId,
       voterId: token.voterId,
       referenceNumber,
+      castAt,
     }))
   );
+  const candidateIds = voteRows.map((row) => row.candidateId);
+  const abstainedPositionIds = input.selections.filter((s) => s.candidateIds.length === 0).map((s) => s.positionId);
 
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.votingToken.updateMany({
       where: { id: token.id, status: 'ISSUED' },
-      data: { status: 'CONSUMED', consumedAt: new Date() },
+      data: { status: 'CONSUMED', consumedAt: castAt },
     });
     if (claimed.count === 0) {
       throw new AppError('This voting link has already been used.', 410);
@@ -99,6 +104,8 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
     }
 
     await tx.voter.update({ where: { id: token.voterId }, data: { votingStatus: 'VOTED' } });
+
+    await recordVoteInTallies(tx, token.electionId, { candidateIds, abstainedPositionIds, castAt });
   });
 
   await writeAuditLog({

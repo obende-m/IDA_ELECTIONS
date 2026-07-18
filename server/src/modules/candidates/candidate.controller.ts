@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { getCurrentElection } from '../../lib/election';
 import { actorFromRequest } from '../../lib/actor';
+import { AppError } from '../../middleware/errorHandler';
 import * as candidateService from './candidate.service';
 import type { CreateCandidateInput, UpdateCandidateInput } from './candidate.validation';
 
@@ -33,4 +34,24 @@ export async function remove(req: Request, res: Response) {
   const election = await getCurrentElection();
   await candidateService.deleteCandidate(election.id, req.params.id, actorFromRequest(req), req);
   res.status(204).send();
+}
+
+export async function uploadPhoto(req: Request, res: Response) {
+  if (!req.file) throw new AppError('A photo file is required', 400);
+
+  const election = await getCurrentElection();
+  const candidate = await candidateService.setCandidatePhoto(
+    election.id,
+    req.params.id,
+    { buffer: req.file.buffer, mimetype: req.file.mimetype },
+    actorFromRequest(req),
+    req
+  );
+  res.json({ candidate });
+}
+
+export async function removePhoto(req: Request, res: Response) {
+  const election = await getCurrentElection();
+  const candidate = await candidateService.removeCandidatePhoto(election.id, req.params.id, actorFromRequest(req), req);
+  res.json({ candidate });
 }

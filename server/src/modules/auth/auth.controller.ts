@@ -7,18 +7,29 @@ import type { ForgotPasswordInput, LoginInput, ResetPasswordInput } from './auth
 const REFRESH_COOKIE_NAME = 'ida_refresh_token';
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Defaults to 'strict', correct when frontend/backend share a site (same host, or same registrable
+// domain via subdomains — e.g. app.igarra-da.org + api.igarra-da.org). Set COOKIE_SAME_SITE=none in
+// Render's env vars when deploying to default *.vercel.app/*.onrender.com domains, since those are
+// cross-site and a Strict cookie would simply never be sent — see requireTrustedOrigin (compensates
+// for the CSRF protection Strict was otherwise providing) in middleware/csrfOrigin.ts.
+const COOKIE_SAME_SITE = (process.env.COOKIE_SAME_SITE ?? 'strict') as 'strict' | 'lax' | 'none';
+// SameSite=None is only accepted by browsers on a Secure cookie, regardless of NODE_ENV.
+const secureCookie = isProduction || COOKIE_SAME_SITE === 'none';
+
 function setRefreshCookie(res: Response, token: string, expiresAt: Date) {
   res.cookie(REFRESH_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
+    secure: secureCookie,
+    sameSite: COOKIE_SAME_SITE,
     path: '/api/auth',
     expires: expiresAt,
   });
 }
 
 function clearRefreshCookie(res: Response) {
-  res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' });
+  // Clearing must echo the same attributes the cookie was set with, or some browsers won't
+  // recognize it as the same cookie and won't actually overwrite/delete it.
+  res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth', secure: secureCookie, sameSite: COOKIE_SAME_SITE });
 }
 
 export async function login(req: Request, res: Response) {

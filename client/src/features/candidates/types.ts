@@ -15,5 +15,4 @@ export interface CandidateFormValues {
   positionId: string;
   name: string;
   bio?: string;
-  photoUrl?: string;
 }
