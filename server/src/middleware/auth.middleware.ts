@@ -17,9 +17,12 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   }
 }
 
-// SUPER_ADMIN is a superset of ADMIN: anything an ADMIN can do, a SUPER_ADMIN can also do.
+// SUPER_ADMIN > ELECTION_COMMITTEE > ADMIN: each role can do everything the ones below it can.
+// ELECTION_COMMITTEE sits above ordinary ADMIN specifically so routine admin accounts (voter
+// imports, candidate data entry) are never automatically able to view individual vote records.
 const ROLE_HIERARCHY: Record<AccessTokenPayload['role'], AccessTokenPayload['role'][]> = {
-  SUPER_ADMIN: ['SUPER_ADMIN', 'ADMIN'],
+  SUPER_ADMIN: ['SUPER_ADMIN', 'ELECTION_COMMITTEE', 'ADMIN'],
+  ELECTION_COMMITTEE: ['ELECTION_COMMITTEE', 'ADMIN'],
   ADMIN: ['ADMIN'],
 };
 

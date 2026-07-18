@@ -5,14 +5,10 @@ import { generateOpaqueToken, hashToken } from '../../lib/tokens';
 import { encryptToken, decryptToken } from '../../lib/crypto';
 import { writeAuditLog } from '../../lib/audit';
 import { assertElectionNotLocked } from '../../lib/electionLock';
-import type { AdminRole } from '../auth/auth.service';
+import type { Actor } from '../../lib/actor';
 import type { CreateVoterInput, ListVotersQuery, UpdateVoterInput } from './voter.validation';
 
-export interface Actor {
-  id: string;
-  fullName: string;
-  role: AdminRole;
-}
+export type { Actor };
 
 function votingLinkFor(rawToken: string): string {
   const base = process.env.VOTING_LINK_BASE_URL ?? 'http://localhost:5173';
@@ -349,8 +345,14 @@ export interface TokenResolution {
   status: 'ISSUED' | 'CONSUMED' | 'REVOKED';
 }
 
-/** Public entry point when a voter opens their personal /vote/:token link. Marks first access and logs every attempt, valid or not. */
-export async function resolveVotingToken(rawToken: string, req?: import('express').Request): Promise<TokenResolution> {
+type TokenWithVoter = VotingToken & { voter: Voter };
+
+/**
+ * Shared validation for every public voter-token entry point (resolve, fetch ballot, cast vote):
+ * looks the token up, rejects anything not currently ISSUED, and audit-logs every denied attempt.
+ * Does not mark the token as accessed — callers decide whether that applies to them.
+ */
+export async function getValidToken(rawToken: string, req?: import('express').Request): Promise<TokenWithVoter> {
   const token = await prisma.votingToken.findUnique({
     where: { tokenHash: hashToken(rawToken) },
     include: { voter: true },
@@ -405,6 +407,13 @@ export async function resolveVotingToken(rawToken: string, req?: import('express
     });
     throw new AppError('This voting link has expired.', 410);
   }
+
+  return token;
+}
+
+/** Public entry point when a voter opens their personal /vote/:token link. Marks first access and logs every attempt, valid or not. */
+export async function resolveVotingToken(rawToken: string, req?: import('express').Request): Promise<TokenResolution> {
+  const token = await getValidToken(rawToken, req);
 
   if (!token.firstAccessedAt) {
     await prisma.votingToken.update({ where: { id: token.id }, data: { firstAccessedAt: new Date() } });

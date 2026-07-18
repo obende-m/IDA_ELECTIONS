@@ -7,7 +7,7 @@ import { AppError } from '../../middleware/errorHandler';
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
-export type AdminRole = 'ADMIN' | 'SUPER_ADMIN';
+export type AdminRole = 'ADMIN' | 'ELECTION_COMMITTEE' | 'SUPER_ADMIN';
 
 export interface SessionResult {
   accessToken: string;
@@ -58,8 +58,10 @@ export async function refresh(rawRefreshToken: string): Promise<SessionResult> {
 
   const role = session.user.role as AdminRole;
 
-  // Rotate: invalidate the old session and issue a new one.
-  await prisma.session.delete({ where: { id: session.id } });
+  // Rotate: invalidate the old session and issue a new one. deleteMany (not delete) so a
+  // concurrent duplicate call — two tabs, or React StrictMode's double effect-invocation in dev —
+  // racing on the same refresh token doesn't crash on "record already deleted"; it just also rotates.
+  await prisma.session.deleteMany({ where: { id: session.id } });
   const { refreshToken, expiresAt } = await createSession(session.userId);
   const accessToken = signAccessToken({ sub: session.userId, role, fullName: session.user.fullName });
 

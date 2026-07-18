@@ -1,15 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { Button, Icon } from '../../components/ui';
+import { useVotingSession } from '../../features/voting/VotingSessionContext';
 
 const FOOTER_LINKS = ['Privacy Policy', 'Terms of Service', 'Election Integrity', 'Support'];
 
 /**
  * Ported from vote_submitted_successfully_mobile/code.html. The confetti ornament in the
- * mock is dropped per DESIGN.md's "lack of unnecessary ornamentation" principle; the reference
- * number is a placeholder until the atomic vote-cast transaction returns a real one.
+ * mock is dropped per DESIGN.md's "lack of unnecessary ornamentation" principle.
  */
 export function SuccessPage() {
   const navigate = useNavigate();
+  const { referenceNumber, clearSession } = useVotingSession();
 
   return (
     <>
@@ -35,7 +36,7 @@ export function SuccessPage() {
 
         <div className="w-full max-w-sm border-2 border-on-background bg-surface-container-low p-6 mt-8">
           <p className="text-label-sm font-label-sm text-secondary uppercase tracking-widest mb-2">Voter Reference Number</p>
-          <p className="text-headline-lg font-headline-lg text-primary">IDA-XXXX-XXX</p>
+          <p className="text-headline-lg font-headline-lg text-primary">{referenceNumber ?? '—'}</p>
           <div className="flex items-center justify-center gap-2 mt-2 text-primary">
             <Icon name="verified" filled size={16} />
             <span className="text-label-sm font-label-sm">Transaction Verified</span>
@@ -48,7 +49,15 @@ export function SuccessPage() {
         </p>
 
         <div className="w-full max-w-sm space-y-3 mt-10">
-          <Button variant="primary" size="lg" fullWidth onClick={() => navigate('/vote')}>
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={() => {
+              clearSession();
+              navigate('/vote');
+            }}
+          >
             Logout
           </Button>
           <Button variant="secondary" size="lg" fullWidth leftIcon="print">

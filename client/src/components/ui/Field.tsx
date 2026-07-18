@@ -76,12 +76,13 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
 
 export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
+  error?: string;
   children: ReactNode;
 }
 
 /** Bordered select matching the dashboard's "Real-time (Auto)" and filter dropdown styling. */
 export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
-  { label, className, id, children, ...props },
+  { label, error, className, id, children, ...props },
   ref
 ) {
   const generatedId = useId();
@@ -97,14 +98,17 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
         ref={ref}
         id={selectId}
         className={cn(
-          'bg-surface border-2 border-on-background font-label-md text-label-md px-4 py-2',
+          'bg-surface border-2 font-label-md text-label-md px-4 py-2',
           'focus:outline-none focus:border-primary transition-colors',
+          error ? 'border-error' : 'border-on-background',
           className
         )}
+        aria-invalid={Boolean(error)}
         {...props}
       >
         {children}
       </select>
+      {error && <p className="text-label-sm font-label-sm text-error">{error}</p>}
     </div>
   );
 });

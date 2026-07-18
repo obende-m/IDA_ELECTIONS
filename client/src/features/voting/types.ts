@@ -7,3 +7,31 @@ export interface ResolvedVotingSession {
   membershipNumber: string;
   status: VotingTokenStatus;
 }
+
+export interface BallotCandidate {
+  id: string;
+  name: string;
+  bio: string | null;
+  photoUrl: string | null;
+}
+
+export interface BallotPosition {
+  id: string;
+  title: string;
+  description: string | null;
+  maxSelections: number;
+  displayOrder: number;
+  candidates: BallotCandidate[];
+}
+
+export interface Ballot {
+  election: { id: string; title: string; year: number };
+  positions: BallotPosition[];
+}
+
+/** positionId -> selected candidateIds (empty array means the voter abstained on that position) */
+export type BallotSelections = Record<string, string[]>;
+
+export interface CastVoteResult {
+  referenceNumber: string;
+}

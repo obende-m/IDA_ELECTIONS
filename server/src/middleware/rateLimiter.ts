@@ -17,3 +17,11 @@ export const passwordResetLimiter = rateLimit({
   legacyHeaders: false,
   message: { status: 'error', statusCode: 429, message: 'Too many password reset requests. Please try again later.' },
 });
+
+/** Throttles brute-force guessing of voting tokens on any public /vote/:token-adjacent endpoint (resolve, ballot, cast). */
+export const votingTokenLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});

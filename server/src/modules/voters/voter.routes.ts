@@ -1,25 +1,16 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import * as voterController from './voter.controller';
 import { validateBody, validateQuery } from '../../middleware/validate';
 import { requireAuth, requireRole } from '../../middleware/auth.middleware';
+import { votingTokenLimiter } from '../../middleware/rateLimiter';
 import { uploadSpreadsheet } from '../../middleware/upload';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { createVoterSchema, listVotersQuerySchema, updateVoterSchema } from './voter.validation';
 
 const router = Router();
 
-// Throttles brute-force guessing of voting tokens; the token itself is the primary defense
-// (48 random bytes), this is defense-in-depth.
-const resolveTokenLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 // Public: a voter opening their personal /vote/:token link.
-router.get('/token/:token/resolve', resolveTokenLimiter, asyncHandler(voterController.resolveToken));
+router.get('/token/:token/resolve', votingTokenLimiter, asyncHandler(voterController.resolveToken));
 
 router.use(requireAuth, requireRole('ADMIN'));
 

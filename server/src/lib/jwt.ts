@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 
 export interface AccessTokenPayload {
   sub: string;
-  role: 'ADMIN' | 'SUPER_ADMIN';
+  role: 'ADMIN' | 'ELECTION_COMMITTEE' | 'SUPER_ADMIN';
   fullName: string;
 }
 

@@ -1,27 +1,44 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Icon } from '../../components/ui';
+import { Button, Icon, useToast } from '../../components/ui';
 import { MobileTopBar } from '../../components/voter/MobileTopBar';
+import { useVotingSession } from '../../features/voting/VotingSessionContext';
+import { votingApi } from '../../features/voting/votingApi';
+import { ApiError } from '../../lib/apiClient';
 
-const SELECTIONS = [
-  { position: 'Chairman', candidate: 'Dr. Emmanuel Ojo' },
-  { position: 'Vice Chairman', candidate: 'Chief Adesuwa Okon' },
-  { position: 'Secretary General', candidate: 'Mr. Kayode Bello' },
-  { position: 'Financial Director', candidate: 'Hon. Sarah Amadu' },
-];
-
-/** Ported from review_confirm_vote_mobile/code.html; the submit action lands on the atomic vote-cast transaction in the Voting Flow module. */
+/** Ported from review_confirm_vote_mobile/code.html; submits the accumulated selections via the atomic vote-cast transaction. */
 export function ReviewPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { session, ballot, selections, setReferenceNumber, clearSession } = useVotingSession();
   const [submitting, setSubmitting] = useState(false);
+
+  if (!session || !ballot) {
+    return (
+      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center min-h-screen">
+        <Icon name="error" size={40} className="text-secondary mb-4" />
+        <h1 className="text-headline-lg font-headline-lg uppercase mb-3">No Active Ballot</h1>
+        <p className="text-body-md text-secondary max-w-sm">Please start again from your personal voting link.</p>
+      </main>
+    );
+  }
 
   const handleCastVote = async () => {
     setSubmitting(true);
-    // Atomic "record vote + invalidate token" transaction is wired up in the Voting Flow module.
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      const result = await votingApi.castVote(session.token, selections);
+      setReferenceNumber(result.referenceNumber);
       navigate('/vote/success');
-    }, 800);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Please try again in a moment.';
+      toast({ title: 'Could not cast your vote', description: message, variant: 'error' });
+      if (err instanceof ApiError && (err.status === 410 || err.status === 409)) {
+        clearSession();
+        navigate('/vote');
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -41,32 +58,33 @@ export function ReviewPage() {
         </div>
 
         <div className="w-full space-y-0">
-          {SELECTIONS.map((item) => (
-            <div key={item.position} className="w-full border border-on-background flex items-center justify-between p-4 -mt-px first:mt-0">
-              <div>
-                <p className="text-label-sm font-label-sm text-secondary uppercase">{item.position}</p>
-                <p className="text-headline-sm font-headline-sm">{item.candidate}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center">
-                  <Icon name="account_circle" size={28} className="text-secondary" />
+          {ballot.positions.map((position) => {
+            const chosenIds = selections[position.id] ?? [];
+            const chosenNames = position.candidates.filter((c) => chosenIds.includes(c.id)).map((c) => c.name);
+            return (
+              <div key={position.id} className="w-full border border-on-background flex items-center justify-between p-4 -mt-px first:mt-0">
+                <div>
+                  <p className="text-label-sm font-label-sm text-secondary uppercase">{position.title}</p>
+                  <p className="text-headline-sm font-headline-sm">
+                    {chosenNames.length > 0 ? chosenNames.join(', ') : <span className="text-secondary italic">Abstained</span>}
+                  </p>
                 </div>
                 <button
                   className="w-8 h-8 flex items-center justify-center border border-primary-container text-primary"
-                  aria-label={`Edit ${item.position} selection`}
-                  onClick={() => navigate('/vote/select/1')}
+                  aria-label={`Edit ${position.title} selection`}
+                  onClick={() => navigate(`/vote/select/${position.id}`)}
                 >
                   <Icon name="edit" size={16} />
                 </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="w-full mt-6 p-4 border border-dashed border-outline-variant bg-surface-container-low flex gap-3">
           <Icon name="info" className="text-secondary shrink-0" />
           <p className="text-body-md italic text-secondary">
-            Once you cast your vote, your choices are encrypted and recorded permanently on the digital ballot. This action
+            Once you cast your vote, your choices are recorded permanently and your voting link is invalidated. This action
             cannot be undone.
           </p>
         </div>

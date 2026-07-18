@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Icon } from '../../components/ui';
+import { Button, Icon, useToast } from '../../components/ui';
 import { MobileTopBar } from '../../components/voter/MobileTopBar';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
+import { votingApi } from '../../features/voting/votingApi';
+import { ApiError } from '../../lib/apiClient';
 
 /**
  * Identity confirmation for a voter who arrived via their personal /vote/:token link (see
@@ -10,7 +13,9 @@ import { useVotingSession } from '../../features/voting/VotingSessionContext';
  */
 export function VerifyPage() {
   const navigate = useNavigate();
-  const { session, clearSession } = useVotingSession();
+  const { toast } = useToast();
+  const { session, setBallot, clearSession } = useVotingSession();
+  const [loading, setLoading] = useState(false);
 
   if (!session) {
     return (
@@ -56,7 +61,34 @@ export function VerifyPage() {
             </div>
           </div>
 
-          <Button variant="gold" size="lg" fullWidth uppercase rightIcon="verified_user" onClick={() => navigate('/vote/select/1')}>
+          <Button
+            variant="gold"
+            size="lg"
+            fullWidth
+            uppercase
+            rightIcon="verified_user"
+            loading={loading}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const ballot = await votingApi.getBallot(session.token);
+                if (ballot.positions.length === 0) {
+                  toast({ title: 'Ballot not ready', description: 'The electoral committee has not published any positions yet.', variant: 'error' });
+                  return;
+                }
+                setBallot(ballot);
+                navigate(`/vote/select/${ballot.positions[0].id}`);
+              } catch (err) {
+                toast({
+                  title: 'Could not load your ballot',
+                  description: err instanceof ApiError ? err.message : 'Please try again in a moment.',
+                  variant: 'error',
+                });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
             Yes, This Is Me — Continue
           </Button>
 

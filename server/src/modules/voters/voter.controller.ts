@@ -5,12 +5,8 @@ import { toCsv } from '../../lib/csv';
 import { writeAuditLog } from '../../lib/audit';
 import * as voterService from './voter.service';
 import { importVoters } from './voter.import';
-import type { Actor } from './voter.service';
+import { actorFromRequest } from '../../lib/actor';
 import type { CreateVoterInput, ListVotersQuery, UpdateVoterInput } from './voter.validation';
-
-function actorFromRequest(req: Request): Actor {
-  return { id: req.user!.sub, fullName: req.user!.fullName, role: req.user!.role };
-}
 
 export async function list(req: Request, res: Response) {
   const election = await getCurrentElection();

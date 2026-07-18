@@ -17,6 +17,10 @@ export interface AuditLogEntry {
 /** Writes a single AuditLog row. Every security-relevant action in the system should call this. */
 export async function writeAuditLog(entry: AuditLogEntry): Promise<void> {
   const ipAddress = entry.req?.ip;
+  const userAgent = entry.req?.get('user-agent');
+  // Every admin-tier role (not VOTER, which has no User row) links back to the User table.
+  const isAdminTier = entry.actorRole !== undefined && entry.actorRole !== 'VOTER';
+
   await prisma.auditLog.create({
     data: {
       action: entry.action,
@@ -28,7 +32,8 @@ export async function writeAuditLog(entry: AuditLogEntry): Promise<void> {
       metadata: entry.metadata,
       electionId: entry.electionId,
       ipAddress,
-      userId: entry.actorRole === 'ADMIN' ? entry.actorId : undefined,
+      userAgent,
+      userId: isAdminTier ? entry.actorId : undefined,
     },
   });
 }

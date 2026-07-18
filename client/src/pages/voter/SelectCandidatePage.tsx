@@ -1,31 +1,75 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Icon } from '../../components/ui';
 import { MobileTopBar } from '../../components/voter/MobileTopBar';
+import { useVotingSession } from '../../features/voting/VotingSessionContext';
 import { cn } from '../../lib/cn';
 
-interface Candidate {
-  id: string;
-  code: string;
-  name: string;
-  tagline: string;
-}
-
-const POSITION = { title: 'Chairman', index: 1, total: 12 };
-
-const CANDIDATES: Candidate[] = [
-  { id: 'c1', code: 'ID: #2401', name: 'Chief Adebayo Johnson', tagline: 'Visionary leadership for community development and digital infrastructure.' },
-  { id: 'c2', code: 'ID: #2402', name: 'Dr. Ngozi Okonjo-Bello', tagline: 'Empowering the youth through vocational training and economic transparency.' },
-  { id: 'c3', code: 'ID: #2403', name: 'Engr. Tunde Williams', tagline: 'Modernizing agricultural systems and ensuring local safety protocols.' },
-];
-
-/** Ported from candidate_selection_mobile/code.html; wired to live candidate/position data in the Election Management module. */
+/** Ported from candidate_selection_mobile/code.html, now driven by the real fetched ballot and accumulating real selections. */
 export function SelectCandidatePage() {
-  const { positionId } = useParams();
+  const { positionId } = useParams<{ positionId: string }>();
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<string | null>(null);
+  const { session, ballot, selections, setSelection } = useVotingSession();
 
-  const progressPct = (POSITION.index / POSITION.total) * 100;
+  const positionIndex = ballot?.positions.findIndex((p) => p.id === positionId) ?? -1;
+  const position = positionIndex >= 0 ? ballot!.positions[positionIndex] : undefined;
+
+  const [current, setCurrent] = useState<string[]>(() => (positionId ? selections[positionId] ?? [] : []));
+
+  useEffect(() => {
+    setCurrent(positionId ? selections[positionId] ?? [] : []);
+  }, [positionId, selections]);
+
+  if (!session || !ballot) {
+    return (
+      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center min-h-screen">
+        <Icon name="error" size={40} className="text-secondary mb-4" />
+        <h1 className="text-headline-lg font-headline-lg uppercase mb-3">No Active Ballot</h1>
+        <p className="text-body-md text-secondary max-w-sm">Please start again from your personal voting link.</p>
+      </main>
+    );
+  }
+
+  if (!position) {
+    return (
+      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center min-h-screen">
+        <Icon name="error" size={40} className="text-secondary mb-4" />
+        <h1 className="text-headline-lg font-headline-lg uppercase mb-3">Position Not Found</h1>
+        <Button variant="secondary" className="mt-4" onClick={() => navigate(`/vote/select/${ballot.positions[0].id}`)}>
+          Back to Start of Ballot
+        </Button>
+      </main>
+    );
+  }
+
+  const progressPct = ((positionIndex + 1) / ballot.positions.length) * 100;
+  const isMultiSelect = position.maxSelections > 1;
+
+  const toggleCandidate = (candidateId: string) => {
+    if (current.includes(candidateId)) {
+      setCurrent(current.filter((id) => id !== candidateId));
+      return;
+    }
+    if (isMultiSelect) {
+      if (current.length >= position.maxSelections) return;
+      setCurrent([...current, candidateId]);
+    } else {
+      setCurrent([candidateId]);
+    }
+  };
+
+  const goToPosition = (index: number) => {
+    setSelection(position.id, current);
+    if (index < 0) {
+      navigate('/vote/verify');
+      return;
+    }
+    if (index >= ballot.positions.length) {
+      navigate('/vote/review');
+      return;
+    }
+    navigate(`/vote/select/${ballot.positions[index].id}`);
+  };
 
   return (
     <>
@@ -34,9 +78,16 @@ export function SelectCandidatePage() {
       <main className="mt-16 mb-24 px-6 py-8 flex-grow max-w-lg mx-auto w-full">
         <div className="mb-8">
           <div className="flex justify-between items-end mb-2">
-            <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-background">Select Candidate for {POSITION.title}</h1>
+            <div>
+              <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-background">Select Candidate for {position.title}</h1>
+              {position.maxSelections > 1 && (
+                <p className="text-label-md font-label-md text-secondary mt-1">
+                  Select up to {position.maxSelections} ({current.length} selected)
+                </p>
+              )}
+            </div>
             <span className="font-label-md text-label-md text-secondary whitespace-nowrap">
-              {POSITION.index} of {POSITION.total}
+              {positionIndex + 1} of {ballot.positions.length}
             </span>
           </div>
           <div className="h-1 bg-surface-container-highest w-full overflow-hidden">
@@ -54,35 +105,28 @@ export function SelectCandidatePage() {
         </div>
 
         <div className="space-y-6">
-          {CANDIDATES.map((candidate) => {
-            const isSelected = selected === candidate.id;
+          {position.candidates.map((candidate) => {
+            const isSelected = current.includes(candidate.id);
             return (
               <div
                 key={candidate.id}
-                onClick={() => setSelected(candidate.id)}
+                onClick={() => toggleCandidate(candidate.id)}
                 className={cn(
                   'bg-surface border-2 border-on-background flex flex-col transition-all cursor-pointer group',
                   isSelected && 'candidate-card-selected'
                 )}
               >
                 <div className="relative w-full h-56 bg-surface-container-high flex items-center justify-center">
-                  <Icon name="account_circle" size={72} className="text-secondary" />
-                  <div className="absolute top-4 right-4 bg-surface px-3 py-1 border border-on-background font-label-md text-label-md">
-                    {candidate.code}
-                  </div>
+                  {candidate.photoUrl ? (
+                    <img src={candidate.photoUrl} alt={candidate.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon name="account_circle" size={72} className="text-secondary" />
+                  )}
                 </div>
                 <div className="p-6">
                   <h3 className="font-headline-md text-headline-md mb-1 uppercase">{candidate.name}</h3>
-                  <p className="font-body-md text-body-md text-secondary mb-4">{candidate.tagline}</p>
-                  <div className="flex items-center justify-between">
-                    <a
-                      className="font-label-md text-label-md text-primary hover:underline flex items-center gap-1"
-                      href="#"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Icon name="description" size={18} />
-                      View Manifesto
-                    </a>
+                  {candidate.bio && <p className="font-body-md text-body-md text-secondary mb-4">{candidate.bio}</p>}
+                  <div className="flex items-center justify-end">
                     <button
                       className={cn(
                         'px-8 py-3 font-label-md text-label-md uppercase tracking-wider transition-all',
@@ -98,29 +142,26 @@ export function SelectCandidatePage() {
               </div>
             );
           })}
+          {position.candidates.length === 0 && (
+            <p className="text-body-md text-secondary italic text-center py-8">No candidates were registered for this position.</p>
+          )}
         </div>
 
         <div className="mt-8 p-4 bg-surface-container border-l-4 border-primary">
           <p className="font-body-md text-body-md italic text-on-surface">
-            Note: You can only select one candidate for this position. Once you proceed, your selection will be temporarily
-            locked until the final review screen.
+            {isMultiSelect
+              ? `You can select up to ${position.maxSelections} candidates for this position, or leave it blank to abstain.`
+              : 'You can select one candidate for this position, or leave it blank to abstain. You can change your answer until you cast your final vote.'}
           </p>
         </div>
       </main>
 
       <nav className="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t-2 border-outline-variant px-6 py-4 flex gap-4 z-50">
-        <Button variant="secondary" uppercase className="flex-1" leftIcon="chevron_left" onClick={() => navigate(-1)}>
+        <Button variant="secondary" uppercase className="flex-1" leftIcon="chevron_left" onClick={() => goToPosition(positionIndex - 1)}>
           Previous
         </Button>
-        <Button
-          variant="gold"
-          uppercase
-          className="flex-[1.5]"
-          rightIcon="chevron_right"
-          disabled={!selected}
-          onClick={() => navigate('/vote/review')}
-        >
-          Next Position
+        <Button variant="gold" uppercase className="flex-[1.5]" rightIcon="chevron_right" onClick={() => goToPosition(positionIndex + 1)}>
+          {positionIndex + 1 === ballot.positions.length ? 'Review Ballot' : 'Next Position'}
         </Button>
       </nav>
 
@@ -131,9 +172,6 @@ export function SelectCandidatePage() {
           Secure Electronic Voting System.
         </p>
       </footer>
-
-      {/* positionId drives which position/candidate set loads once wired to real data */}
-      <span className="sr-only">Position {positionId}</span>
     </>
   );
 }

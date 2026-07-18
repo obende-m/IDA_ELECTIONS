@@ -10,6 +10,7 @@ generator client {
 
 enum Role {
   SUPER_ADMIN
+  ELECTION_COMMITTEE
   ADMIN
   VOTER
 }
@@ -152,6 +153,7 @@ model Voter {
   updatedAt        DateTime          @updatedAt
 
   tokens           VotingToken[]
+  votes            Vote[]
 
   @@unique([electionId, membershipNumber])
   @@map("voters")
@@ -191,19 +193,26 @@ model VotingToken {
   @@map("voting_tokens")
 }
 
-// SECURE BALLOT ENTITY
-// Contains absolutely zero voter references. This separation guarantees voter anonymity
-// in compliance with the security guidelines.
+// OPEN BALLOT with controlled access: individual vote records are traceable to the voter who
+// cast them (by design, per election committee decision), but visibility is restricted at the
+// application layer to ELECTION_COMMITTEE/SUPER_ADMIN roles, never exposed via exports/reports/
+// public APIs, and every read of individual records is itself audit-logged. See voting.service.ts.
 model Vote {
-  id          String    @id @default(uuid())
-  electionId  String
-  election    Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  positionId  String
-  position    Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  candidateId String
-  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  timestamp   DateTime  @default(now())
+  id              String    @id @default(uuid())
+  electionId      String
+  election        Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  positionId      String
+  position        Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  candidateId     String
+  candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  voterId         String
+  voter           Voter     @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  referenceNumber String    // shared across every position in one ballot submission; shown to the voter as their receipt
+  castAt          DateTime  @default(now())
 
+  @@unique([voterId, positionId, candidateId])
+  @@index([electionId])
+  @@index([referenceNumber])
   @@map("votes")
 }
 
@@ -217,6 +226,7 @@ model AuditLog {
   targetId   String?
   metadata   Json?    // Detailed dynamic context (e.g. IPs, changes list)
   ipAddress  String?
+  userAgent  String?
   timestamp  DateTime @default(now())
   
   userId     String?

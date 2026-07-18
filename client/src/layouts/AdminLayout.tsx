@@ -1,13 +1,20 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { Icon } from '../components/ui';
 import { cn } from '../lib/cn';
+import { useAuth } from '../features/auth/AuthContext';
+import type { UserRole } from '../features/auth/types';
 
-const NAV_ITEMS = [
+const ELECTION_COMMITTEE_ROLES: UserRole[] = ['SUPER_ADMIN', 'ELECTION_COMMITTEE'];
+
+const NAV_ITEMS: { to: string; label: string; icon: string; roles?: UserRole[] }[] = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/admin/candidates', label: 'Candidates', icon: 'groups' },
   { to: '/admin/positions', label: 'Positions', icon: 'list_alt' },
   { to: '/admin/voters', label: 'Voters', icon: 'person_search' },
   { to: '/admin/results', label: 'Live Results', icon: 'analytics' },
+  // Individual vote records are sensitive: restricted to Election Committee / Super Admin, both
+  // client-side (hidden from the nav for anyone else) and server-side (the real security boundary).
+  { to: '/admin/vote-records', label: 'Vote Records', icon: 'visibility', roles: ELECTION_COMMITTEE_ROLES },
   { to: '/admin/reports', label: 'Reports', icon: 'description' },
   { to: '/admin/audit', label: 'Audit Logs', icon: 'security' },
   { to: '/admin/settings', label: 'Settings', icon: 'settings' },
@@ -15,6 +22,9 @@ const NAV_ITEMS = [
 
 /** Fixed sidebar + top app bar shell for every /admin/* route (ported from admin_dashboard_ida_election_portal code.html). */
 export function AdminLayout() {
+  const { user } = useAuth();
+  const navItems = NAV_ITEMS.filter((item) => !item.roles || (user && item.roles.includes(user.role)));
+
   return (
     <div className="min-h-screen bg-background text-on-background">
       <aside className="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container border-r border-on-background flex flex-col pt-8 z-40">
@@ -30,7 +40,7 @@ export function AdminLayout() {
           </div>
         </div>
         <nav className="flex-1 px-2 space-y-1 overflow-y-auto custom-scrollbar">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

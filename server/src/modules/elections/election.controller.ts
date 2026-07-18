@@ -1,14 +1,35 @@
 import type { Request, Response } from 'express';
 import * as electionService from './election.service';
-import type { Actor } from './election.service';
-import type { LockReasonInput, UnlockReasonInput } from './election.validation';
-
-function actorFromRequest(req: Request): Actor {
-  return { id: req.user!.sub, fullName: req.user!.fullName, role: req.user!.role };
-}
+import { actorFromRequest } from '../../lib/actor';
+import type { LockReasonInput, UnlockReasonInput, UpdateElectionInput } from './election.validation';
 
 export async function getCurrent(req: Request, res: Response) {
   const election = await electionService.getCurrentElectionDetail();
+  res.json({ election });
+}
+
+export async function update(req: Request, res: Response) {
+  const election = await electionService.updateCurrentElection(req.body as UpdateElectionInput, actorFromRequest(req), req);
+  res.json({ election });
+}
+
+export async function open(req: Request, res: Response) {
+  const election = await electionService.openElection(actorFromRequest(req), req);
+  res.json({ election });
+}
+
+export async function pause(req: Request, res: Response) {
+  const election = await electionService.pauseElection(actorFromRequest(req), req);
+  res.json({ election });
+}
+
+export async function resume(req: Request, res: Response) {
+  const election = await electionService.resumeElection(actorFromRequest(req), req);
+  res.json({ election });
+}
+
+export async function archive(req: Request, res: Response) {
+  const election = await electionService.archiveElection(actorFromRequest(req), req);
   res.json({ election });
 }
 

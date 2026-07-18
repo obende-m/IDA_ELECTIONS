@@ -9,6 +9,7 @@ import { ResultsPage } from './pages/admin/ResultsPage';
 import { ReportsPage } from './pages/admin/ReportsPage';
 import { AuditPage } from './pages/admin/AuditPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
+import { VoteRecordsPage } from './pages/admin/VoteRecordsPage';
 import { WelcomePage } from './pages/voter/WelcomePage';
 import { TokenEntryPage } from './pages/voter/TokenEntryPage';
 import { VerifyPage } from './pages/voter/VerifyPage';
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
           { path: '/admin/positions', element: <PositionsPage /> },
           { path: '/admin/voters', element: <VotersPage /> },
           { path: '/admin/results', element: <ResultsPage /> },
+          { path: '/admin/vote-records', element: <VoteRecordsPage /> },
           { path: '/admin/reports', element: <ReportsPage /> },
           { path: '/admin/audit', element: <AuditPage /> },
           { path: '/admin/settings', element: <SettingsPage /> },
