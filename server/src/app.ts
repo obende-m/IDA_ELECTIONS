@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import authRoutes from './modules/auth/auth.routes';
+import userRoutes from './modules/users/user.routes';
 import electionRoutes from './modules/elections/election.routes';
 import candidateRoutes from './modules/candidates/candidate.routes';
 import positionRoutes from './modules/positions/position.routes';
@@ -38,6 +39,7 @@ app.get('/api/health', (req, res) => {
 
 // Register Module Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/elections', electionRoutes);
 app.use('/api/candidates', candidateRoutes);
 app.use('/api/positions', positionRoutes);

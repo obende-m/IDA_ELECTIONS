@@ -6,6 +6,7 @@ import { BackToTopButton } from '../components/BackToTopButton';
 import type { UserRole } from '../features/auth/types';
 
 const ELECTION_COMMITTEE_ROLES: UserRole[] = ['SUPER_ADMIN', 'ELECTION_COMMITTEE'];
+const SUPER_ADMIN_ROLES: UserRole[] = ['SUPER_ADMIN'];
 
 const NAV_ITEMS: { to: string; label: string; icon: string; roles?: UserRole[] }[] = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -18,6 +19,9 @@ const NAV_ITEMS: { to: string; label: string; icon: string; roles?: UserRole[] }
   { to: '/admin/vote-records', label: 'Vote Records', icon: 'visibility', roles: ELECTION_COMMITTEE_ROLES },
   { to: '/admin/reports', label: 'Reports', icon: 'description' },
   { to: '/admin/audit', label: 'Audit Logs', icon: 'security' },
+  // Managing who else has administrative access is Super Admin-exclusive — same boundary as
+  // unlocking a locked election, enforced server-side in user.routes.ts.
+  { to: '/admin/users', label: 'Admin Accounts', icon: 'manage_accounts', roles: SUPER_ADMIN_ROLES },
   { to: '/admin/settings', label: 'Settings', icon: 'settings' },
 ];
 
