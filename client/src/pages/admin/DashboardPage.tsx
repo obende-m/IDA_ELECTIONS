@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { StatCard, StatusPill, Icon, SelectField, useToast } from '../../components/ui';
 import { useCurrentElection, useLockElection } from '../../features/elections/useElection';
 import { LockBanner } from '../../features/elections/LockBanner';
@@ -43,6 +44,7 @@ export function DashboardPage() {
   const { data: analytics } = useAnalytics();
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const lockElection = useLockElection();
+  const navigate = useNavigate();
 
   const handleLock = async (reason: string) => {
     await lockElection.mutateAsync(reason);
@@ -145,12 +147,13 @@ export function DashboardPage() {
           </div>
           <div className="flex flex-col gap-4">
             {[
-              { icon: 'add_circle', label: 'Register New Voter' },
-              { icon: 'description', label: 'Export Hourly Report' },
-              { icon: 'history', label: 'View System Audit' },
+              { icon: 'add_circle', label: 'Register New Voter', to: '/admin/voters' },
+              { icon: 'description', label: 'Export Hourly Report', to: '/admin/reports' },
+              { icon: 'history', label: 'View System Audit', to: '/admin/audit' },
             ].map((action) => (
               <button
                 key={action.label}
+                onClick={() => navigate(action.to)}
                 className="flex items-center justify-between p-4 bg-surface border border-on-background hover:bg-on-background hover:text-on-primary transition-all group"
               >
                 <div className="flex items-center gap-3">

@@ -1,7 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, ScrollRestoration, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/ui';
 import { cn } from '../lib/cn';
 import { useAuth } from '../features/auth/AuthContext';
+import { BackToTopButton } from '../components/BackToTopButton';
 import type { UserRole } from '../features/auth/types';
 
 const ELECTION_COMMITTEE_ROLES: UserRole[] = ['SUPER_ADMIN', 'ELECTION_COMMITTEE'];
@@ -22,8 +23,14 @@ const NAV_ITEMS: { to: string; label: string; icon: string; roles?: UserRole[] }
 
 /** Fixed sidebar + top app bar shell for every /admin/* route (ported from admin_dashboard_ida_election_portal code.html). */
 export function AdminLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const navItems = NAV_ITEMS.filter((item) => !item.roles || (user && item.roles.includes(user.role)));
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/admin/login', { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-background text-on-background">
@@ -76,23 +83,20 @@ export function AdminLayout() {
             <span className="text-label-md font-label-md uppercase tracking-wider">Secure Protocol v.4.0</span>
           </div>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-4 border-r border-outline-variant pr-6">
-            <button className="text-secondary hover:bg-surface-container transition-colors p-2" aria-label="Institution">
-              <Icon name="account_balance" />
-            </button>
-            <div className="relative">
-              <button className="text-secondary hover:bg-surface-container transition-colors p-2" aria-label="Notifications">
-                <Icon name="notifications" />
-              </button>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-2 border-r border-outline-variant pr-4">
+            <Icon name="account_circle" className="text-secondary" />
+            <div className="text-right leading-tight">
+              <p className="text-label-md font-label-md font-bold">{user?.fullName}</p>
+              <p className="text-label-sm font-label-sm text-secondary uppercase tracking-wide">{user?.role}</p>
             </div>
-            <button className="text-secondary hover:bg-surface-container transition-colors p-2" aria-label="Account">
-              <Icon name="account_circle" />
-            </button>
           </div>
-          <button className="bg-on-background text-on-primary font-label-md text-label-md px-6 py-2 border-2 border-on-background hover:bg-transparent hover:text-on-background transition-all">
-            Secure Session
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-on-background text-on-primary font-label-md text-label-md px-6 py-2 border-2 border-on-background hover:bg-transparent hover:text-on-background transition-all"
+          >
+            <Icon name="logout" size={16} />
+            Log Out
           </button>
         </div>
       </header>
@@ -100,11 +104,15 @@ export function AdminLayout() {
       <main className="ml-64 mt-16 flex-1 px-margin-desktop py-12 flex flex-col gap-8 pb-24">
         <Outlet />
       </main>
+      <ScrollRestoration />
+      <BackToTopButton />
 
       <footer className="ml-64 bg-surface-container-lowest border-t border-outline-variant py-4 px-margin-desktop">
-        <div className="flex justify-between items-center">
-          <p className="text-label-sm font-label-sm text-secondary">© 2024 Igarra Development Association (IDA). Secure Electronic Voting System.</p>
-          <div className="flex gap-6">
+        <div className="flex flex-col md:flex-row flex-wrap justify-between items-center gap-x-6 gap-y-3">
+          <p className="text-label-sm font-label-sm text-secondary text-center md:text-left">
+            © 2024 Igarra Development Association (IDA). Secure Electronic Voting System.
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
             <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
               Election Integrity
             </a>

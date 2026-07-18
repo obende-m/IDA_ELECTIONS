@@ -54,8 +54,8 @@ export function AuditPage() {
         </p>
       </section>
 
-      <section className="bg-surface-container-low border border-on-background p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="md:col-span-2">
+      <section className="bg-surface-container-low border border-on-background p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+        <div className="sm:col-span-2 lg:col-span-5">
           <Field
             icon="search"
             placeholder="Search by action or target..."
@@ -67,22 +67,24 @@ export function AuditPage() {
             }}
           />
         </div>
-        <SelectField
-          aria-label="Filter by action"
-          value={action}
-          onChange={(e) => {
-            setAction(e.target.value);
-            resetToFirstPage();
-          }}
-        >
-          <option value="">All Actions</option>
-          {actionsData?.actions.map((a) => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ))}
-        </SelectField>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="lg:col-span-3">
+          <SelectField
+            aria-label="Filter by action"
+            value={action}
+            onChange={(e) => {
+              setAction(e.target.value);
+              resetToFirstPage();
+            }}
+          >
+            <option value="">All Actions</option>
+            {actionsData?.actions.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </SelectField>
+        </div>
+        <div className="lg:col-span-2">
           <Field
             type="date"
             aria-label="From date"
@@ -92,6 +94,8 @@ export function AuditPage() {
               resetToFirstPage();
             }}
           />
+        </div>
+        <div className="lg:col-span-2">
           <Field
             type="date"
             aria-label="To date"
