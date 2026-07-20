@@ -50,17 +50,20 @@ export function ReviewPage() {
         <h1 className="text-headline-md font-headline-md text-center mb-2">Review Your Ballot</h1>
         <p className="text-body-md text-secondary text-center mb-6">Please verify your selections before final submission.</p>
 
-        <div className="w-full flex items-center gap-2 bg-surface-container px-4 py-2 border-t-2 border-primary-container mb-6">
+        <div className="w-full flex items-center gap-2 bg-surface-container px-4 py-2 rounded-lg border-t-2 border-primary-container mb-6">
           <Icon name="shield" filled size={18} className="text-primary" />
           <span className="text-label-md font-label-md uppercase tracking-widest text-secondary">Secure Session Encrypted</span>
         </div>
 
-        <div className="w-full space-y-0">
+        <div className="w-full space-y-3">
           {ballot.positions.map((position) => {
             const chosenIds = selections[position.id] ?? [];
             const chosenNames = position.candidates.filter((c) => chosenIds.includes(c.id)).map((c) => c.name);
             return (
-              <div key={position.id} className="w-full border border-on-background flex items-center justify-between p-4 -mt-px first:mt-0">
+              <div
+                key={position.id}
+                className="w-full rounded-lg border border-outline-variant shadow-sm flex items-center justify-between p-4"
+              >
                 <div>
                   <p className="text-label-sm font-label-sm text-secondary uppercase">{position.title}</p>
                   <p className="text-headline-sm font-headline-sm">
@@ -68,7 +71,7 @@ export function ReviewPage() {
                   </p>
                 </div>
                 <button
-                  className="w-8 h-8 flex items-center justify-center border border-primary-container text-primary"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center border border-primary-container text-primary hover:bg-primary-container/10 transition-colors"
                   aria-label={`Edit ${position.title} selection`}
                   onClick={() => navigate(`/vote/select/${position.id}`)}
                 >
@@ -79,7 +82,7 @@ export function ReviewPage() {
           })}
         </div>
 
-        <div className="w-full mt-6 p-4 border border-dashed border-outline-variant bg-surface-container-low flex gap-3">
+        <div className="w-full mt-6 p-4 rounded-lg border border-dashed border-outline-variant bg-surface-container-low flex gap-3">
           <Icon name="info" className="text-secondary shrink-0" />
           <p className="text-body-md italic text-secondary">
             Once you cast your vote, your choices are recorded permanently and your voting link is invalidated. This action

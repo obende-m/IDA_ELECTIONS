@@ -18,7 +18,7 @@ export function ResultsPage() {
 
   return (
     <>
-      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-on-background pb-6">
+      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
         <div>
           <h1 className="text-headline-xl font-headline-xl uppercase">Live Results</h1>
           <p className="text-label-md font-label-md text-error flex items-center gap-2">
@@ -34,7 +34,7 @@ export function ResultsPage() {
       </section>
 
       <div className="bento-grid">
-        <div className="col-span-12 lg:col-span-8 bg-surface border-t-2 border-primary-container border-x border-b border-on-background p-8 flex flex-col gap-8">
+        <div className="col-span-12 lg:col-span-8 bg-surface border-t-2 border-primary-container border-x border-b border-outline-variant rounded-xl shadow-sm p-8 flex flex-col gap-8">
           <div className="flex justify-between items-center">
             <h3 className="text-headline-sm font-headline-sm uppercase">Current Standings</h3>
             <Badge variant="gold">Verified Counts</Badge>
@@ -60,8 +60,8 @@ export function ResultsPage() {
                               {c.voteCount.toLocaleString()} Votes ({c.pct}%)
                             </span>
                           </div>
-                          <div className="w-full h-3 bg-surface-container">
-                            <div className="h-full bg-on-background" style={{ width: `${c.pct}%` }} />
+                          <div className="w-full h-3 bg-surface-container rounded-full overflow-hidden">
+                            <div className="h-full bg-on-background rounded-full" style={{ width: `${c.pct}%` }} />
                           </div>
                         </div>
                       ))}
@@ -78,7 +78,7 @@ export function ResultsPage() {
         </div>
 
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-          <div className="bg-surface border border-on-background p-8 flex flex-col items-center gap-4">
+          <div className="bg-surface border border-outline-variant rounded-xl shadow-sm p-8 flex flex-col items-center gap-4">
             <p className="text-label-md font-label-md uppercase text-secondary tracking-widest">Total Voter Turnout</p>
             <RadialProgress
               value={analytics?.turnoutPct ?? 0}
@@ -90,12 +90,12 @@ export function ResultsPage() {
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-on-background text-on-primary p-4 flex flex-col gap-2">
+            <div className="bg-on-background text-on-primary rounded-xl shadow-sm p-4 flex flex-col gap-2">
               <Icon name="timer" className="text-primary-container" />
               <p className="text-label-sm font-label-sm text-primary-container uppercase">Polling Duration</p>
               <p className="text-headline-sm font-headline-sm">{formatElapsed(analytics?.election.startTime ?? null)}</p>
             </div>
-            <div className="bg-surface border border-on-background p-4 flex flex-col gap-2">
+            <div className="bg-surface border border-outline-variant rounded-xl shadow-sm p-4 flex flex-col gap-2">
               <Icon name="shield" className="text-primary" />
               <p className="text-label-sm font-label-sm text-secondary uppercase">Encryption</p>
               <p className="text-headline-sm font-headline-sm">AES-256</p>

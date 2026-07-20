@@ -41,12 +41,12 @@ export function AuditPage() {
 
   return (
     <>
-      <section className="border-b-2 border-on-background pb-6">
+      <section className="border-b border-outline-variant pb-6">
         <h1 className="text-headline-xl font-headline-xl uppercase">Audit Logs</h1>
         <p className="text-body-lg text-secondary">Searchable trail of every security-relevant system action.</p>
       </section>
 
-      <section className="flex items-start gap-3 bg-on-background text-on-primary border-2 border-primary-container px-6 py-4">
+      <section className="flex items-start gap-3 bg-on-background text-on-primary rounded-xl shadow-sm border border-primary-container px-6 py-4">
         <Icon name="security" filled className="text-primary-container shrink-0" />
         <p className="text-body-md text-secondary-fixed">
           Individual voter identities are never shown here — actions performed by a voter (e.g. casting a ballot) are
@@ -54,7 +54,7 @@ export function AuditPage() {
         </p>
       </section>
 
-      <section className="bg-surface-container-low border border-on-background p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+      <section className="bg-surface-container-low border border-outline-variant rounded-xl shadow-sm p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
         <div className="sm:col-span-2 lg:col-span-5">
           <Field
             icon="search"
@@ -108,7 +108,7 @@ export function AuditPage() {
         </div>
       </section>
 
-      <section className="bg-surface border border-on-background">
+      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
         <DataTable
           columns={columns}
           rows={data?.entries ?? []}
@@ -121,14 +121,14 @@ export function AuditPage() {
           </p>
           <div className="flex gap-2">
             <button
-              className="w-9 h-9 flex items-center justify-center border border-on-background disabled:opacity-40"
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <Icon name="chevron_left" size={18} />
             </button>
             <button
-              className="w-9 h-9 flex items-center justify-center border border-on-background disabled:opacity-40"
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >

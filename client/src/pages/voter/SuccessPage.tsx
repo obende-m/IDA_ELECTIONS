@@ -14,9 +14,9 @@ export function SuccessPage() {
 
   return (
     <>
-      <header className="w-full flex items-center justify-between px-margin-mobile h-16 bg-surface border-b-2 border-on-background">
+      <header className="w-full flex items-center justify-between px-margin-mobile h-16 bg-surface border-b border-outline-variant shadow-sm">
         <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
-        <button className="bg-on-background text-on-primary font-label-md text-label-md px-4 py-2 border-2 border-on-background">
+        <button className="bg-on-background text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg shadow-sm">
           Secure Session
         </button>
       </header>
@@ -25,7 +25,7 @@ export function SuccessPage() {
         <p className="text-label-md font-label-md tracking-widest text-primary uppercase mt-4">Igarra Development Association</p>
         <h1 className="text-headline-lg font-headline-lg uppercase mt-1">Secure Electronic Voting</h1>
 
-        <div className="w-24 h-24 rounded-full bg-primary-container border-2 border-on-background flex items-center justify-center my-8">
+        <div className="w-24 h-24 rounded-full bg-primary-container shadow-sm flex items-center justify-center my-8">
           <Icon name="check" size={48} className="text-on-background" />
         </div>
 
@@ -34,7 +34,7 @@ export function SuccessPage() {
           Your vote has been successfully recorded and encrypted in the IDA secure database.
         </p>
 
-        <div className="w-full max-w-sm border-2 border-on-background bg-surface-container-low p-6 mt-8">
+        <div className="w-full max-w-sm rounded-xl border border-outline-variant shadow-sm bg-surface-container-low p-6 mt-8">
           <p className="text-label-sm font-label-sm text-secondary uppercase tracking-widest mb-2">Voter Reference Number</p>
           <p className="text-headline-lg font-headline-lg text-primary">{referenceNumber ?? '—'}</p>
           <div className="flex items-center justify-center gap-2 mt-2 text-primary">

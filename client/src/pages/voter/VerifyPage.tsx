@@ -28,7 +28,7 @@ export function VerifyPage() {
 
       <main className="flex-grow pt-24 pb-12 px-margin-mobile flex flex-col items-center">
         <div className="mb-10 text-center">
-          <div className="inline-flex w-24 h-24 items-center justify-center p-4 bg-on-background border border-outline-variant mb-6">
+          <div className="inline-flex w-24 h-24 items-center justify-center p-4 rounded-2xl bg-on-background shadow-sm mb-6">
             <Icon name="shield" filled size={40} className="text-primary-container" />
           </div>
           <h1 className="text-headline-lg-mobile font-headline-lg-mobile text-on-surface mb-2">IDA ELECTION PORTAL</h1>
@@ -36,14 +36,14 @@ export function VerifyPage() {
         </div>
 
         <div className="w-full max-w-sm space-y-8">
-          <div className="bg-primary-container/10 p-4 border-l-4 border-primary">
+          <div className="bg-primary-container/10 p-4 rounded-r-lg border-l-4 border-primary">
             <p className="text-label-sm font-label-sm text-primary uppercase mb-1">Confirm Your Identity</p>
             <p className="text-body-md text-on-surface-variant leading-tight">
               This voting link was issued to the member below. Please confirm this is you before continuing.
             </p>
           </div>
 
-          <div className="border-2 border-on-background p-6 space-y-4">
+          <div className="rounded-xl border border-outline-variant shadow-sm p-6 space-y-4">
             <div>
               <p className="text-label-sm font-label-sm text-secondary uppercase">Full Name</p>
               <p className="text-headline-sm font-headline-sm">{session.fullName}</p>

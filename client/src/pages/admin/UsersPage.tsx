@@ -27,7 +27,7 @@ export function UsersPage() {
 
   if (!isAuthorized) {
     return (
-      <section className="flex flex-col items-center justify-center text-center gap-4 border border-error py-24 px-8">
+      <section className="flex flex-col items-center justify-center text-center gap-4 rounded-xl border border-error shadow-sm py-24 px-8">
         <Icon name="lock" filled size={32} className="text-error" />
         <h1 className="text-headline-md font-headline-md uppercase">Access Restricted</h1>
         <p className="text-body-md text-secondary max-w-md">
@@ -89,7 +89,7 @@ export function UsersPage() {
         return (
           <div className="flex justify-end flex-wrap gap-2">
             <button
-              className="w-9 h-9 flex items-center justify-center border border-on-background hover:bg-surface-container-high transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high hover:border-on-background transition-colors disabled:opacity-40 disabled:pointer-events-none"
               aria-label={`Reset password for ${u.fullName}`}
               title="Reset password"
               onClick={() => setResetTarget(u)}
@@ -98,7 +98,7 @@ export function UsersPage() {
             </button>
             <button
               className={cn(
-                'w-9 h-9 flex items-center justify-center border transition-colors disabled:opacity-40 disabled:pointer-events-none',
+                'w-9 h-9 rounded-lg flex items-center justify-center border transition-colors disabled:opacity-40 disabled:pointer-events-none',
                 u.isActive
                   ? 'border-error text-error hover:bg-error hover:text-on-error'
                   : 'border-primary text-primary hover:bg-primary hover:text-on-primary'
@@ -118,7 +118,7 @@ export function UsersPage() {
 
   return (
     <>
-      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-on-background pb-6">
+      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
         <div>
           <h1 className="text-headline-xl font-headline-xl uppercase">Admin Accounts</h1>
           <p className="text-body-lg text-secondary">Create and manage Admin and Election Committee logins.</p>
@@ -128,7 +128,7 @@ export function UsersPage() {
         </Button>
       </section>
 
-      <section className="bg-surface border border-on-background">
+      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
         <DataTable
           columns={columns}
           rows={data?.users ?? []}

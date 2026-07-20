@@ -49,7 +49,7 @@ export function ReportsPage() {
 
   return (
     <>
-      <section className="border-b-2 border-on-background pb-6">
+      <section className="border-b border-outline-variant pb-6">
         <h1 className="text-headline-xl font-headline-xl uppercase">Reports</h1>
         <p className="text-body-lg text-secondary">Generate and export election summary, results, and audit reports.</p>
       </section>

@@ -75,7 +75,7 @@ export function SettingsPage() {
 
   if (isLoading || !election) {
     return (
-      <section className="border-b-2 border-on-background pb-6">
+      <section className="border-b border-outline-variant pb-6">
         <h1 className="text-headline-xl font-headline-xl uppercase">Settings</h1>
         <p className="text-body-lg text-secondary">Loading election configuration…</p>
       </section>
@@ -88,14 +88,14 @@ export function SettingsPage() {
     <>
       <LockBanner election={election} />
 
-      <section className="border-b-2 border-on-background pb-6">
+      <section className="border-b border-outline-variant pb-6">
         <h1 className="text-headline-xl font-headline-xl uppercase">Settings</h1>
         <p className="text-body-lg text-secondary">Election lifecycle configuration and system preferences.</p>
       </section>
 
       <div className="bento-grid">
-        <div className="col-span-12 lg:col-span-7 bg-surface border border-on-background p-8">
-          <h2 className="text-headline-sm font-headline-sm uppercase mb-6 border-b-2 border-primary pb-4">Election Details</h2>
+        <div className="col-span-12 lg:col-span-7 bg-surface border border-outline-variant rounded-xl shadow-sm p-8">
+          <h2 className="text-headline-sm font-headline-sm uppercase mb-6 border-b border-primary-container/60 pb-4">Election Details</h2>
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Field label="Election Title" disabled={isLocked} error={errors.title?.message} {...register('title')} />
             <Field label="Year" type="number" disabled={isLocked} error={errors.year?.message} {...register('year')} />
@@ -106,18 +106,18 @@ export function SettingsPage() {
           </form>
         </div>
 
-        <div className="col-span-12 lg:col-span-5 bg-surface-container border border-on-background p-8 flex flex-col gap-6">
-          <div className="border-b-2 border-primary pb-4 flex items-center justify-between">
+        <div className="col-span-12 lg:col-span-5 bg-surface-container border border-outline-variant rounded-xl shadow-sm p-8 flex flex-col gap-6">
+          <div className="border-b border-primary-container/60 pb-4 flex items-center justify-between">
             <h2 className="text-headline-sm font-headline-sm uppercase">Election Status</h2>
             <Badge variant={STATUS_BADGE[election.status]}>{election.status}</Badge>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="bg-surface border border-on-background p-4">
+            <div className="bg-surface border border-outline-variant rounded-lg shadow-sm p-4">
               <p className="text-headline-lg font-headline-lg">{election._count?.positions ?? 0}</p>
               <p className="text-label-sm font-label-sm text-secondary uppercase">Positions</p>
             </div>
-            <div className="bg-surface border border-on-background p-4">
+            <div className="bg-surface border border-outline-variant rounded-lg shadow-sm p-4">
               <p className="text-headline-lg font-headline-lg">{election._count?.voters ?? 0}</p>
               <p className="text-label-sm font-label-sm text-secondary uppercase">Registered Voters</p>
             </div>

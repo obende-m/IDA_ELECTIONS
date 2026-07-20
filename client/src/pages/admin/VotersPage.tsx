@@ -156,7 +156,7 @@ export function VotersPage() {
       render: (v) => (
         <div className="flex justify-end flex-wrap gap-2">
           <button
-            className="w-9 h-9 flex items-center justify-center border border-on-background hover:bg-surface-container-high disabled:opacity-40 disabled:pointer-events-none"
+            className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high hover:border-on-background transition-colors disabled:opacity-40 disabled:pointer-events-none"
             aria-label={`Edit ${v.fullName}`}
             disabled={isLocked}
             onClick={() => setFormVoter(v)}
@@ -165,7 +165,7 @@ export function VotersPage() {
           </button>
           <button
             className={cn(
-              'w-9 h-9 flex items-center justify-center border transition-colors disabled:opacity-40 disabled:pointer-events-none',
+              'w-9 h-9 rounded-lg flex items-center justify-center border transition-colors disabled:opacity-40 disabled:pointer-events-none',
               v.isActive
                 ? 'border-error text-error hover:bg-error hover:text-on-error'
                 : 'border-primary text-primary hover:bg-primary hover:text-on-primary'
@@ -179,7 +179,7 @@ export function VotersPage() {
           </button>
           {v.votingStatus === 'NOT_ISSUED' && (
             <button
-              className="w-9 h-9 flex items-center justify-center border border-error text-error hover:bg-error hover:text-on-error transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-error text-error hover:bg-error hover:text-on-error transition-colors disabled:opacity-40 disabled:pointer-events-none"
               aria-label={`Delete ${v.fullName}`}
               title="Delete voter"
               disabled={isLocked || deleteVoter.isPending}
@@ -197,7 +197,7 @@ export function VotersPage() {
           {v.votingStatus === 'ISSUED' && (
             <>
               <button
-                className="w-9 h-9 flex items-center justify-center border border-on-background hover:bg-surface-container-high"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high hover:border-on-background transition-colors"
                 aria-label={`Copy voting link for ${v.fullName}`}
                 onClick={() => handleCopyLink(v)}
               >
@@ -228,7 +228,7 @@ export function VotersPage() {
     <>
       {election && <LockBanner election={election} />}
 
-      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-on-background pb-6">
+      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
         <div>
           <h1 className="text-headline-xl font-headline-xl uppercase">Voters</h1>
           <p className="text-body-lg text-secondary">Manage the voter roll, imports, and voting tokens.</p>
@@ -249,7 +249,7 @@ export function VotersPage() {
         </div>
       </section>
 
-      <section className="bg-surface-container-low border border-on-background p-6 flex flex-col md:flex-row gap-6 items-end">
+      <section className="bg-surface-container-low border border-outline-variant rounded-xl shadow-sm p-6 flex flex-col md:flex-row gap-6 items-end">
         <div className="flex-1 w-full">
           <Field
             icon="search"
@@ -276,7 +276,7 @@ export function VotersPage() {
         </SelectField>
       </section>
 
-      <section className="bg-surface border border-on-background">
+      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
         <DataTable
           columns={columns}
           rows={data?.voters ?? []}
@@ -289,14 +289,14 @@ export function VotersPage() {
           </p>
           <div className="flex gap-2">
             <button
-              className="w-9 h-9 flex items-center justify-center border border-on-background disabled:opacity-40"
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <Icon name="chevron_left" size={18} />
             </button>
             <button
-              className="w-9 h-9 flex items-center justify-center border border-on-background disabled:opacity-40"
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >

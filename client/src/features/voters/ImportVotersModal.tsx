@@ -47,7 +47,7 @@ export function ImportVotersModal({ open, onClose }: ImportVotersModalProps) {
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
-            className="w-full border-2 border-dashed border-outline-variant p-10 flex flex-col items-center gap-3 hover:border-primary transition-colors"
+            className="w-full rounded-lg border-2 border-dashed border-outline-variant p-10 flex flex-col items-center gap-3 hover:border-primary transition-colors"
           >
             <Icon name="upload_file" size={32} className="text-secondary" />
             <span className="text-label-md font-label-md">{file ? file.name : 'Click to choose a .csv or .xlsx file'}</span>
@@ -72,7 +72,7 @@ export function ImportVotersModal({ open, onClose }: ImportVotersModalProps) {
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {REPORT_ROWS.map((r) => (
-              <div key={r.key} className="border border-on-background p-4 text-center">
+              <div key={r.key} className="rounded-lg border border-outline-variant shadow-sm p-4 text-center">
                 <p className={`text-headline-lg font-headline-lg ${r.tone}`}>{report[r.key].length}</p>
                 <p className="text-label-sm font-label-sm text-secondary uppercase tracking-widest">{r.label}</p>
               </div>
@@ -80,7 +80,7 @@ export function ImportVotersModal({ open, onClose }: ImportVotersModalProps) {
           </div>
 
           {report.invalid.length > 0 && (
-            <div className="border border-error max-h-48 overflow-y-auto">
+            <div className="rounded-lg border border-error max-h-48 overflow-y-auto overflow-x-hidden">
               <p className="px-4 py-2 bg-error-container text-on-error-container text-label-sm font-label-sm font-bold uppercase">
                 Rows needing attention
               </p>

@@ -70,7 +70,7 @@ export function CandidatesPage() {
       render: (row) => (
         <div className="flex justify-end gap-2">
           <button
-            className="w-9 h-9 flex items-center justify-center border border-on-background hover:bg-surface-container-high disabled:opacity-40 disabled:pointer-events-none"
+            className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high hover:border-on-background transition-colors disabled:opacity-40 disabled:pointer-events-none"
             aria-label={`Edit ${row.name}`}
             disabled={isLocked}
             onClick={() => setFormCandidate(row)}
@@ -78,7 +78,7 @@ export function CandidatesPage() {
             <Icon name="edit" size={18} />
           </button>
           <button
-            className="w-9 h-9 flex items-center justify-center border border-on-background hover:bg-surface-container-high disabled:opacity-40 disabled:pointer-events-none"
+            className="w-9 h-9 rounded-lg flex items-center justify-center border border-error text-error hover:bg-error hover:text-on-error transition-colors disabled:opacity-40 disabled:pointer-events-none"
             aria-label={`Delete ${row.name}`}
             disabled={isLocked}
             onClick={() => handleDelete(row)}
@@ -96,7 +96,7 @@ export function CandidatesPage() {
     <>
       {election && <LockBanner election={election} />}
 
-      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-on-background pb-6">
+      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
         <div>
           <h1 className="text-headline-xl font-headline-xl uppercase">Candidate Management</h1>
           <p className="text-body-lg text-secondary">Oversee official ballot entries for {election?.title ?? 'the current election'}.</p>
@@ -116,7 +116,7 @@ export function CandidatesPage() {
         <p className="text-body-md text-secondary italic">Add at least one position before adding candidates.</p>
       )}
 
-      <section className="bg-surface-container-low border border-on-background p-6 flex flex-col md:flex-row gap-6 items-end">
+      <section className="bg-surface-container-low border border-outline-variant rounded-xl shadow-sm p-6 flex flex-col md:flex-row gap-6 items-end">
         <div className="flex-1 w-full">
           <Field
             icon="search"
@@ -136,7 +136,7 @@ export function CandidatesPage() {
         </SelectField>
       </section>
 
-      <section className="bg-surface border border-on-background">
+      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
         <DataTable
           columns={columns}
           rows={candidates}

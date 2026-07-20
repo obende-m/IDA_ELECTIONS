@@ -24,7 +24,7 @@ export function VoteRecordsPage() {
 
   if (!isAuthorized) {
     return (
-      <section className="flex flex-col items-center justify-center text-center gap-4 border border-error py-24 px-8">
+      <section className="flex flex-col items-center justify-center text-center gap-4 rounded-xl border border-error shadow-sm py-24 px-8">
         <Icon name="lock" filled size={32} className="text-error" />
         <h1 className="text-headline-md font-headline-md uppercase">Access Restricted</h1>
         <p className="text-body-md text-secondary max-w-md">
@@ -64,12 +64,12 @@ export function VoteRecordsPage() {
 
   return (
     <>
-      <section className="border-b-2 border-on-background pb-6">
+      <section className="border-b border-outline-variant pb-6">
         <h1 className="text-headline-xl font-headline-xl uppercase">Individual Vote Records</h1>
         <p className="text-body-lg text-secondary">Election administration and verification only.</p>
       </section>
 
-      <section className="flex items-start gap-3 bg-on-background text-on-primary border-2 border-primary-container px-6 py-4">
+      <section className="flex items-start gap-3 bg-on-background text-on-primary rounded-xl shadow-sm border border-primary-container px-6 py-4">
         <Icon name="visibility" filled className="text-primary-container shrink-0" />
         <p className="text-body-md text-secondary-fixed">
           This screen shows who voted for whom. Access is restricted to Election Committee and Super Admin roles. Every time
@@ -78,7 +78,7 @@ export function VoteRecordsPage() {
         </p>
       </section>
 
-      <section className="bg-surface-container-low border border-on-background p-6">
+      <section className="bg-surface-container-low border border-outline-variant rounded-xl shadow-sm p-6">
         <Field
           icon="search"
           placeholder="Search by voter name or membership number..."
@@ -91,7 +91,7 @@ export function VoteRecordsPage() {
         />
       </section>
 
-      <section className="bg-surface border border-on-background">
+      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
         <DataTable
           columns={columns}
           rows={data?.records ?? []}
@@ -104,14 +104,14 @@ export function VoteRecordsPage() {
           </p>
           <div className="flex gap-2">
             <button
-              className="w-9 h-9 flex items-center justify-center border border-on-background disabled:opacity-40"
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <Icon name="chevron_left" size={18} />
             </button>
             <button
-              className="w-9 h-9 flex items-center justify-center border border-on-background disabled:opacity-40"
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
