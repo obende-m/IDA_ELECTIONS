@@ -58,7 +58,7 @@ export function DashboardPage() {
     <>
       {election && <LockBanner election={election} />}
 
-      <section className="flex flex-col md:flex-row justify-between items-end border-b-2 border-on-background pb-6">
+      <section className="flex flex-col md:flex-row justify-between items-end border-b border-outline-variant pb-6">
         <div>
           <h1 className="font-headline-xl text-headline-xl uppercase">Dashboard</h1>
           <p className="font-body-lg text-body-lg text-secondary">Real-time election participation monitoring.</p>
@@ -82,8 +82,8 @@ export function DashboardPage() {
           value={
             <>
               <span>{(analytics?.turnoutPct ?? 0).toFixed(1)}%</span>
-              <div className="w-full h-2 bg-surface-container mt-2">
-                <div className="h-full bg-primary" style={{ width: `${analytics?.turnoutPct ?? 0}%` }} />
+              <div className="w-full h-2 bg-surface-container rounded-full mt-2 overflow-hidden">
+                <div className="h-full bg-primary rounded-full" style={{ width: `${analytics?.turnoutPct ?? 0}%` }} />
               </div>
             </>
           }
@@ -93,7 +93,7 @@ export function DashboardPage() {
       </section>
 
       <div className="bento-grid">
-        <div className="col-span-12 lg:col-span-8 bg-surface border border-on-background p-8 flex flex-col gap-6">
+        <div className="col-span-12 lg:col-span-8 bg-surface border border-outline-variant rounded-xl shadow-sm p-8 flex flex-col gap-6">
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-headline-sm text-headline-sm uppercase">Live Voting Activity</h3>
@@ -105,7 +105,7 @@ export function DashboardPage() {
           </div>
           {analytics && analytics.timeline.length > 0 ? (
             <>
-              <div className="relative h-64 w-full bg-surface-container flex items-end justify-between px-8 py-4 border border-outline-variant overflow-hidden">
+              <div className="relative h-64 w-full bg-surface-container rounded-lg flex items-end justify-between px-8 py-4 border border-outline-variant overflow-hidden">
                 <div
                   className="absolute inset-0 opacity-10 pointer-events-none"
                   style={{
@@ -116,7 +116,7 @@ export function DashboardPage() {
                 {analytics.timeline.map((point) => (
                   <div
                     key={point.hourBucket}
-                    className="w-12 relative group bg-on-background"
+                    className="w-12 relative group bg-on-background rounded-t-md"
                     style={{ height: `${Math.max(4, (point.ballotsCast / maxHourly) * 100)}%` }}
                   >
                     <div className="absolute -top-8 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity text-label-sm font-bold">
@@ -134,14 +134,14 @@ export function DashboardPage() {
               </div>
             </>
           ) : (
-            <div className="h-64 w-full bg-surface-container border border-outline-variant flex items-center justify-center">
+            <div className="h-64 w-full bg-surface-container rounded-lg border border-outline-variant flex items-center justify-center">
               <p className="text-label-md font-label-md text-secondary uppercase tracking-widest">No voting activity yet</p>
             </div>
           )}
         </div>
 
-        <div className="col-span-12 lg:col-span-4 bg-surface-container border border-on-background p-8 flex flex-col gap-6">
-          <div className="border-b-2 border-primary pb-4">
+        <div className="col-span-12 lg:col-span-4 bg-surface-container border border-outline-variant rounded-xl shadow-sm p-8 flex flex-col gap-6">
+          <div className="border-b border-primary-container/60 pb-4">
             <h3 className="font-headline-sm text-headline-sm uppercase">Quick Actions</h3>
             <p className="text-label-md font-label-md text-secondary">Authorized Administrative Commands</p>
           </div>
@@ -154,7 +154,7 @@ export function DashboardPage() {
               <button
                 key={action.label}
                 onClick={() => navigate(action.to)}
-                className="flex items-center justify-between p-4 bg-surface border border-on-background hover:bg-on-background hover:text-on-primary transition-all group"
+                className="flex items-center justify-between p-4 rounded-lg bg-surface border border-outline-variant shadow-sm hover:bg-on-background hover:text-on-primary hover:shadow-md transition-all group"
               >
                 <div className="flex items-center gap-3">
                   <Icon name={action.icon} />
@@ -168,7 +168,7 @@ export function DashboardPage() {
             <button
               disabled={election?.isLocked}
               onClick={() => setLockModalOpen(true)}
-              className="flex items-center justify-between p-4 bg-error text-on-error border border-error hover:bg-transparent hover:text-error transition-all group disabled:opacity-50 disabled:pointer-events-none"
+              className="flex items-center justify-between p-4 rounded-lg bg-error text-on-error shadow-sm hover:brightness-95 hover:shadow-md transition-all group disabled:opacity-50 disabled:pointer-events-none"
             >
               <div className="flex items-center gap-3">
                 <Icon name="emergency" filled />
@@ -181,7 +181,7 @@ export function DashboardPage() {
               </span>
             </button>
           </div>
-          <div className="mt-4 p-4 border border-outline-variant bg-surface italic text-body-md text-secondary">
+          <div className="mt-4 p-4 rounded-lg border border-outline-variant bg-surface italic text-body-md text-secondary">
             "Transparency is the cornerstone of democracy."
           </div>
         </div>
@@ -197,7 +197,7 @@ export function DashboardPage() {
           onConfirm={handleLock}
         />
 
-        <div className="col-span-12 bg-surface border border-on-background p-6">
+        <div className="col-span-12 bg-surface border border-outline-variant rounded-xl shadow-sm p-6">
           <h4 className="text-label-md font-label-md uppercase text-secondary mb-4">Recent Activity</h4>
           <div className="text-label-sm font-label-sm space-y-2">
             {analytics && analytics.recentActivity.length > 0 ? (

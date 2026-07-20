@@ -7,7 +7,7 @@ const FOOTER_LINKS = ['Privacy Policy', 'Election Integrity', 'Terms of Service'
 export function WelcomePage() {
   return (
     <>
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-surface border-b-2 border-on-background">
+      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-surface border-b border-outline-variant shadow-sm">
         <div className="flex items-center gap-2">
           <Icon name="how_to_vote" className="text-primary" />
           <h1 className="text-label-md font-label-md font-bold text-primary">IDA PORTAL</h1>
@@ -40,14 +40,14 @@ export function WelcomePage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-2 bg-primary-container text-on-primary-container font-bold border border-on-background w-full justify-center">
+          <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-bold shadow-sm w-full justify-center">
             <StatusPill label="Election Status: Active" />
           </div>
 
           <div className="w-full pt-4">
             <Link
               to="/vote/verify"
-              className="w-full py-5 bg-on-background text-on-primary font-bold text-headline-sm uppercase tracking-widest hover:bg-primary transition-all border-2 border-on-background hover:border-primary-container gold-border-focus flex items-center justify-center gap-3"
+              className="w-full py-5 rounded-lg bg-on-background text-on-primary font-bold text-headline-sm uppercase tracking-widest shadow-sm hover:shadow-md hover:bg-primary hover:-translate-y-px transition-all gold-border-focus flex items-center justify-center gap-3"
             >
               Start Voting
               <Icon name="arrow_forward" filled />

@@ -15,15 +15,15 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   neutral: 'bg-surface-container-high text-on-background',
   success: 'bg-green-100 text-green-800',
   error: 'bg-error-container text-on-error-container',
-  outline: 'bg-surface border border-on-background text-on-background',
+  outline: 'bg-surface border border-outline-variant text-on-background',
 };
 
-/** Rectangular tag used for "Verified", position labels, and status chips (DESIGN.md Verification Chips). */
+/** Pill-shaped tag used for "Verified", position labels, and status chips (DESIGN.md Verification Chips). */
 export function Badge({ variant = 'neutral', icon, className, children, ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 px-3 py-1 text-label-sm font-label-sm font-bold uppercase tracking-wider',
+        'inline-flex items-center gap-1 px-3 py-1 rounded-full text-label-sm font-label-sm font-bold uppercase tracking-wider',
         VARIANT_CLASSES[variant],
         className
       )}

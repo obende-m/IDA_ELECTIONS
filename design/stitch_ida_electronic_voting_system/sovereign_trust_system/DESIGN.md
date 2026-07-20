@@ -143,21 +143,19 @@ The layout philosophy follows a **Fixed Grid with Fluid Margins**. This ensures 
 - **Mobile:** On mobile, the layout collapses to a single column with 24px side margins to accommodate larger touch targets.
 - **Rhythm:** All vertical spacing follows an 8px base unit (8, 16, 24, 32, 48, 64) to maintain mathematical harmony across all components.
 
-## Elevation & Depth
+## Elevation & Depth (v2 — Modern Minimal SaaS)
 
-To maintain a "Government-Grade" feel, this design system avoids soft shadows and excessive blurs, opting instead for **Tonal Layering and Sharp Outlines**.
+*Revised: the original flat/sharp-outline system read as harsher than intended in practice. Colors are unchanged; geometry and depth moved to a softer, contemporary treatment closer to Linear/Stripe-style dashboards.*
 
-- **Surface Tiers:** Background is White (#FFFFFF). Secondary containers use Surface Neutral (#F5F5F0). Third-level interactive elements (like input fields) use a 1px solid Black (#000000) border.
-- **Strict Flatness:** Depth is conveyed through structural lines rather than shadows. This mimics the feel of high-end official documents.
-- **Active State:** When an element is selected or focused, it gains a 2px Primary Gold (#D4AF37) border. No ambient shadows are permitted, ensuring the UI feels "fast" and electronically native.
+- **Surface Tiers:** Background is White (#FFFFFF). Secondary containers use Surface Neutral (#F5F5F0). Depth between tiers is now conveyed with soft, subtle shadows (`shadow-sm`/`shadow-md`) rather than borders alone.
+- **Default Borders:** 1px, using the soft warm-grey `outline-variant` token (#D0C5AF) — not black. Heavier black/gold borders are reserved for genuine emphasis (focus, selection, primary CTAs, active nav item), not the default state of every box.
+- **Active/Selected State:** A 2px Primary Gold (#D4AF37) border paired with a soft gold-tinted ring shadow and faint background tint — clearly distinct without being heavy-handed.
+- **Hover Feedback:** Cards lift slightly (`-translate-y-0.5` to `-translate-y-1`) with an increased shadow on hover, rather than only flipping a border color.
 
-## Shapes
+## Shapes (v2)
 
-The design system utilizes **Sharp (0px)** corners for all primary UI elements. 
-
-- **Rationale:** Sharp corners evoke precision, technical accuracy, and institutional rigidity. 
-- **Exceptions:** Circular geometry is reserved strictly for user avatars or specific status indicators to provide a soft contrast to the otherwise rectangular, high-security grid.
-- **Dividers:** 2px solid lines are used to separate content sections, reinforcing the "form-based" nature of the voting system.
+- **Radius:** buttons/inputs/badges use 8px, cards/panels use 12px, modals/feature panels use 16px. Fully circular geometry remains reserved for avatars and status indicators.
+- **Dividers:** 1-2px solid lines are still used to separate major content sections where a hard rule is genuinely useful, but no longer as the default depth cue everywhere.
 
 ## Components
 

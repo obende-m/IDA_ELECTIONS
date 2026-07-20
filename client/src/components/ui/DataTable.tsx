@@ -23,13 +23,13 @@ const ALIGN_CLASS: Record<'left' | 'right' | 'center', string> = {
   center: 'text-center',
 };
 
-/** Neutral-header data table with 1px row dividers, no zebra striping (DESIGN.md Data Tables). */
+/** Neutral-header data table with soft row dividers and a subtle hover state, no zebra striping (DESIGN.md Data Tables). */
 export function DataTable<T>({ columns, rows, rowKey, emptyMessage = 'No records found.', className }: DataTableProps<T>) {
   return (
     <div className={cn('w-full overflow-x-auto', className)}>
       <table className="w-full border-collapse">
         <thead>
-          <tr className="bg-surface-container-low border-b-2 border-on-background">
+          <tr className="bg-surface-container-low border-b border-outline-variant">
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -52,7 +52,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage = 'No records
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-surface-container-high">
+              <tr key={rowKey(row)} className="border-b border-surface-container-high hover:bg-surface-container-low/60 transition-colors">
                 {columns.map((col) => (
                   <td key={col.key} className={cn('px-4 py-4 text-body-md align-middle', col.className, ALIGN_CLASS[col.align ?? 'left'])}>
                     {col.render(row)}

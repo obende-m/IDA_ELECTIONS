@@ -85,13 +85,13 @@ export function SelectCandidatePage() {
               {positionIndex + 1} of {ballot.positions.length}
             </span>
           </div>
-          <div className="h-1 bg-surface-container-highest w-full overflow-hidden">
-            <div className="h-full bg-primary-container" style={{ width: `${progressPct}%` }} />
+          <div className="h-1 bg-surface-container-highest w-full overflow-hidden rounded-full">
+            <div className="h-full bg-primary-container rounded-full" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
 
         <div className="mb-6 flex items-center gap-2">
-          <div className="bg-primary-container px-3 py-1 flex items-center gap-1">
+          <div className="bg-primary-container px-3 py-1 rounded-full flex items-center gap-1">
             <Icon name="verified_user" filled size={16} />
             <span className="font-label-sm text-label-sm uppercase tracking-widest text-on-primary-container font-bold">
               Secure Voting Protocol Active
@@ -107,7 +107,7 @@ export function SelectCandidatePage() {
                 key={candidate.id}
                 onClick={() => toggleCandidate(candidate.id)}
                 className={cn(
-                  'bg-surface border-2 border-on-background flex flex-col transition-all cursor-pointer group',
+                  'bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden flex flex-col transition-all cursor-pointer group hover:shadow-md hover:-translate-y-0.5',
                   isSelected && 'candidate-card-selected'
                 )}
               >
@@ -124,9 +124,9 @@ export function SelectCandidatePage() {
                   <div className="flex items-center justify-end">
                     <button
                       className={cn(
-                        'px-8 py-3 font-label-md text-label-md uppercase tracking-wider transition-all',
+                        'px-8 py-3 rounded-lg font-label-md text-label-md uppercase tracking-wider transition-all',
                         isSelected
-                          ? 'bg-primary-container text-on-primary-container font-bold'
+                          ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
                           : 'bg-on-background text-on-primary group-hover:bg-primary-container group-hover:text-on-primary-container'
                       )}
                     >
@@ -142,7 +142,7 @@ export function SelectCandidatePage() {
           )}
         </div>
 
-        <div className="mt-8 p-4 bg-surface-container border-l-4 border-primary">
+        <div className="mt-8 p-4 rounded-r-lg bg-surface-container border-l-4 border-primary">
           <p className="font-body-md text-body-md italic text-on-surface">
             {isMultiSelect
               ? `You can select up to ${position.maxSelections} candidates for this position, or leave it blank to abstain.`
@@ -151,7 +151,7 @@ export function SelectCandidatePage() {
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t-2 border-outline-variant px-6 py-4 flex gap-4 z-50">
+      <nav className="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant shadow-[0_-2px_8px_rgba(28,27,27,0.06)] px-6 py-4 flex gap-4 z-50">
         <Button variant="secondary" uppercase className="flex-1" leftIcon="chevron_left" onClick={() => goToPosition(positionIndex - 1)}>
           Previous
         </Button>

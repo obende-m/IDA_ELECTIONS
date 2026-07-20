@@ -25,17 +25,17 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-margin-mobile">
-      <div className="absolute inset-0 bg-on-background/60" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-on-background/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative w-full max-w-lg bg-surface border-2 border-on-background flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-lg bg-surface border border-outline-variant rounded-xl shadow-xl flex flex-col max-h-[90vh]"
       >
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b-2 border-on-background">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
             <h2 className="text-headline-sm font-headline-sm uppercase">{title}</h2>
-            <button onClick={onClose} aria-label="Close" className="p-1 hover:bg-surface-container-high">
+            <button onClick={onClose} aria-label="Close" className="p-1 rounded-md hover:bg-surface-container-high">
               <Icon name="close" />
             </button>
           </div>

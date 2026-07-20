@@ -28,7 +28,7 @@ export function LockBanner({ election }: LockBannerProps) {
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-on-background text-on-primary border-2 border-error px-6 py-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-on-background text-on-primary border border-error rounded-xl shadow-sm px-6 py-4">
         <div className="flex items-start gap-3">
           <Icon name="lock" filled className="text-error shrink-0" />
           <div>

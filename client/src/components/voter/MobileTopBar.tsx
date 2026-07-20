@@ -12,7 +12,7 @@ export interface MobileTopBarProps {
 export function MobileTopBar({ title, showBack = true, centerTitle = false, rightSlot }: MobileTopBarProps) {
   const navigate = useNavigate();
   return (
-    <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-margin-mobile h-16 bg-surface border-b-2 border-on-background">
+    <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-margin-mobile h-16 bg-surface border-b border-outline-variant shadow-sm">
       <div className="flex items-center gap-3">
         {showBack && (
           <button

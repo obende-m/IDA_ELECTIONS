@@ -17,10 +17,10 @@ export function StatCard({ label, value, icon, helpText, inverse, className }: S
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 p-6',
+        'flex flex-col gap-4 p-6 rounded-xl transition-all',
         inverse
-          ? 'bg-on-background text-on-primary'
-          : 'bg-surface border-t-2 border-primary-container border-x border-b border-on-background',
+          ? 'bg-on-background text-on-primary shadow-sm'
+          : 'bg-surface border-t-2 border-primary-container border-x border-b border-outline-variant shadow-sm hover:shadow-md',
         className
       )}
     >

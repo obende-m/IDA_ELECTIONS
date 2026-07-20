@@ -44,57 +44,59 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-on-background">
-      <header className="w-full flex items-center justify-center h-16 bg-surface border-b-2 border-on-background">
+      <header className="w-full flex items-center justify-center h-16 bg-surface border-b border-outline-variant shadow-sm">
         <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-margin-mobile py-12">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-2">
-            <div className="mx-auto w-14 h-14 bg-on-background flex items-center justify-center">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-on-background flex items-center justify-center shadow-sm">
               <Icon name="shield" filled size={28} className="text-primary-container" />
             </div>
             <p className="text-label-md font-label-md tracking-widest text-primary uppercase">Electoral Official Access</p>
             <h1 className="text-headline-lg font-headline-lg uppercase">Admin Portal</h1>
           </div>
 
-          <div className="bg-primary-container/10 p-4 border-l-4 border-primary">
-            <p className="text-label-sm font-label-sm text-primary uppercase mb-1">Security Notice</p>
-            <p className="text-body-md text-on-surface-variant leading-tight">
-              This portal is restricted to authorized electoral officials. All access attempts are logged.
-            </p>
+          <div className="bg-surface border border-outline-variant rounded-xl shadow-sm p-8 space-y-6">
+            <div className="bg-primary-container/10 p-4 rounded-lg border-l-4 border-primary">
+              <p className="text-label-sm font-label-sm text-primary uppercase mb-1">Security Notice</p>
+              <p className="text-body-md text-on-surface-variant leading-tight">
+                This portal is restricted to authorized electoral officials. All access attempts are logged.
+              </p>
+            </div>
+
+            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+              <Field
+                label="Email Address"
+                icon="mail"
+                type="email"
+                autoComplete="username"
+                error={errors.email?.message}
+                {...register('email')}
+              />
+              <Field
+                label="Password"
+                icon="lock"
+                type="password"
+                autoComplete="current-password"
+                error={errors.password?.message}
+                {...register('password')}
+              />
+
+              {serverError && (
+                <p role="alert" className="text-label-md font-label-md text-error">
+                  {serverError}
+                </p>
+              )}
+
+              <Button type="submit" variant="gold" size="lg" fullWidth uppercase loading={isSubmitting} rightIcon="arrow_forward">
+                Sign In
+              </Button>
+            </form>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <Field
-              label="Email Address"
-              icon="mail"
-              type="email"
-              autoComplete="username"
-              error={errors.email?.message}
-              {...register('email')}
-            />
-            <Field
-              label="Password"
-              icon="lock"
-              type="password"
-              autoComplete="current-password"
-              error={errors.password?.message}
-              {...register('password')}
-            />
-
-            {serverError && (
-              <p role="alert" className="text-label-md font-label-md text-error">
-                {serverError}
-              </p>
-            )}
-
-            <Button type="submit" variant="gold" size="lg" fullWidth uppercase loading={isSubmitting} rightIcon="arrow_forward">
-              Sign In
-            </Button>
-          </form>
-
-          <div className="text-center border-t border-outline-variant pt-6">
+          <div className="text-center">
             <a className="text-label-md font-label-md text-primary hover:underline" href="#">
               Forgot your password?
             </a>

@@ -17,16 +17,14 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  // DESIGN.md: "Solid Black background, White text, 0px radius. On hover, the border changes to Primary Gold."
-  primary:
-    'bg-on-background text-on-primary border-2 border-on-background hover:border-primary-container',
-  // DESIGN.md: "White background, 2px Black border, Black text."
+  // DESIGN.md v2: solid black, soft elevation on hover instead of a border-color flip.
+  primary: 'bg-on-background text-on-primary shadow-sm hover:shadow-md hover:-translate-y-px',
+  // Soft neutral border by default; darkens only on hover/focus.
   secondary:
-    'bg-surface text-on-background border-2 border-on-background hover:bg-surface-container-high',
-  // DESIGN.md: "For the final Cast Vote action, use a Primary Gold background."
-  gold:
-    'bg-primary-container text-on-primary-container border-2 border-on-background font-bold hover:brightness-95',
-  danger: 'bg-error text-on-error border border-error hover:bg-transparent hover:text-error',
+    'bg-surface text-on-background border border-outline-variant hover:border-on-background hover:bg-surface-container-low',
+  // For the final "Cast Vote" action — Primary Gold with a soft lift on hover.
+  gold: 'bg-primary-container text-on-primary-container font-bold shadow-sm hover:shadow-md hover:brightness-95 hover:-translate-y-px',
+  danger: 'bg-error text-on-error shadow-sm hover:shadow-md hover:brightness-95',
   ghost: 'bg-transparent text-secondary border border-transparent hover:bg-surface-container',
 };
 
@@ -57,8 +55,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center transition-all active:scale-[0.98]',
-        'disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100',
+        'inline-flex items-center justify-center rounded-lg transition-all active:scale-[0.98]',
+        'disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 disabled:shadow-none disabled:translate-y-0',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         uppercase && 'uppercase tracking-widest',

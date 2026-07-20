@@ -38,10 +38,10 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background text-on-background">
-      <aside className="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container border-r border-on-background flex flex-col pt-8 z-40">
+      <aside className="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container border-r border-outline-variant flex flex-col pt-8 z-40">
         <div className="px-6 mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-on-background flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-on-background flex items-center justify-center shadow-sm">
               <Icon name="shield" filled className="text-primary-container" />
             </div>
             <div>
@@ -50,17 +50,17 @@ export function AdminLayout() {
             </div>
           </div>
         </div>
-        <nav className="flex-1 px-2 space-y-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 px-4 py-3 transition-colors',
+                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all',
                   isActive
-                    ? 'bg-primary-container text-on-primary-container font-bold border-l-4 border-primary'
-                    : 'text-secondary hover:bg-secondary-container'
+                    ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                    : 'text-secondary hover:bg-surface-container-high'
                 )
               }
             >
@@ -72,17 +72,17 @@ export function AdminLayout() {
         <div className="p-6 border-t border-outline-variant">
           <NavLink
             to="/vote"
-            className="block w-full text-center bg-primary-container text-on-primary-container font-bold py-3 uppercase tracking-tighter hover:bg-primary transition-colors border border-on-background"
+            className="block w-full text-center bg-primary-container text-on-primary-container font-bold py-3 rounded-lg uppercase tracking-tighter shadow-sm hover:shadow-md hover:brightness-95 transition-all"
           >
             Cast Vote
           </NavLink>
         </div>
       </aside>
 
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface border-b-2 border-on-background">
+      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface border-b border-outline-variant shadow-sm">
         <div className="flex items-center gap-4">
           <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
-          <div className="hidden md:flex items-center gap-2 bg-on-background px-3 py-1 text-primary-container">
+          <div className="hidden md:flex items-center gap-2 bg-on-background px-3 py-1 rounded-full text-primary-container">
             <Icon name="verified" filled size={14} />
             <span className="text-label-md font-label-md uppercase tracking-wider">Secure Protocol v.4.0</span>
           </div>
@@ -97,7 +97,7 @@ export function AdminLayout() {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 bg-on-background text-on-primary font-label-md text-label-md px-6 py-2 border-2 border-on-background hover:bg-transparent hover:text-on-background transition-all"
+            className="flex items-center gap-2 bg-on-background text-on-primary font-label-md text-label-md px-6 py-2 rounded-lg shadow-sm hover:shadow-md hover:brightness-110 transition-all"
           >
             <Icon name="logout" size={16} />
             Log Out

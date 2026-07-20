@@ -9,7 +9,7 @@ export interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
 }
 
-/** High-security form field: label above, icon prefix, 2px black bottom border, gold focus border (DESIGN.md Form Fields). */
+/** Rounded, fully-bordered form field with a soft gold focus ring (DESIGN.md v2 Form Fields). */
 export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
   { label, icon, error, hint, className, id, type = 'text', ...props },
   ref
@@ -22,13 +22,13 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
   return (
     <div className="space-y-2">
       {label && (
-        <label htmlFor={inputId} className="block text-label-md font-label-md text-on-background uppercase">
+        <label htmlFor={inputId} className="block text-label-md font-label-md text-secondary">
           {label}
         </label>
       )}
       <div className="relative">
         {icon && (
-          <span className="absolute left-0 bottom-3 text-on-surface-variant pointer-events-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">
             <Icon name={icon} />
           </span>
         )}
@@ -37,12 +37,12 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           id={inputId}
           type={isPassword && visible ? 'text' : type}
           className={cn(
-            'w-full py-3 bg-transparent border-b-2 text-headline-sm font-headline-sm',
-            'focus:outline-none focus:border-primary transition-colors',
-            'placeholder:text-surface-container-highest',
-            icon && 'pl-8',
+            'w-full px-4 py-3 bg-surface border rounded-lg text-body-lg',
+            'focus:outline-none focus:ring-2 focus:ring-primary-container/40 focus:border-primary transition-colors',
+            'placeholder:text-on-surface-variant/50',
+            icon && 'pl-10',
             isPassword && 'pr-10',
-            error ? 'border-error' : 'border-on-background',
+            error ? 'border-error' : 'border-outline-variant',
             className
           )}
           aria-invalid={Boolean(error)}
@@ -53,7 +53,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            className="absolute right-0 bottom-3 text-primary"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
             aria-label={visible ? 'Hide value' : 'Show value'}
           >
             <Icon name={visible ? 'visibility_off' : 'visibility'} />
@@ -80,7 +80,7 @@ export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement
   children: ReactNode;
 }
 
-/** Bordered select matching the dashboard's "Real-time (Auto)" and filter dropdown styling. */
+/** Rounded, bordered select matching Field's styling. */
 export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
   { label, error, className, id, children, ...props },
   ref
@@ -98,9 +98,9 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
         ref={ref}
         id={selectId}
         className={cn(
-          'bg-surface border-2 font-label-md text-label-md px-4 py-2',
-          'focus:outline-none focus:border-primary transition-colors',
-          error ? 'border-error' : 'border-on-background',
+          'bg-surface border rounded-lg font-label-md text-label-md px-4 py-2.5',
+          'focus:outline-none focus:ring-2 focus:ring-primary-container/40 focus:border-primary transition-colors',
+          error ? 'border-error' : 'border-outline-variant',
           className
         )}
         aria-invalid={Boolean(error)}

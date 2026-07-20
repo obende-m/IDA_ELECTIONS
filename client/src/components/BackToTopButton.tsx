@@ -19,7 +19,7 @@ export function BackToTopButton() {
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       aria-label="Scroll to top"
-      className="fixed bottom-8 right-8 z-50 w-12 h-12 flex items-center justify-center bg-on-background text-on-primary border-2 border-on-background hover:bg-primary-container hover:text-on-primary-container hover:border-primary-container transition-colors shadow-lg"
+      className="fixed bottom-8 right-8 z-50 w-12 h-12 rounded-full flex items-center justify-center bg-on-background text-on-primary shadow-lg hover:bg-primary-container hover:text-on-primary-container hover:shadow-xl hover:-translate-y-0.5 transition-all"
     >
       <Icon name="arrow_upward" size={20} />
     </button>

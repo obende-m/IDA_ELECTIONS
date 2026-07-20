@@ -29,7 +29,7 @@ const VARIANT_ICON: Record<ToastVariant, string> = {
 };
 
 const VARIANT_CLASSES: Record<ToastVariant, string> = {
-  default: 'border-on-background text-on-background',
+  default: 'border-outline-variant text-on-background',
   success: 'border-primary-container text-on-background',
   error: 'border-error text-error',
 };
@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={item.id}
               role="status"
-              className={cn('bg-surface border-2 px-4 py-3 flex items-start gap-3 shadow-none', VARIANT_CLASSES[item.variant ?? 'default'])}
+              className={cn('bg-surface border rounded-lg px-4 py-3 flex items-start gap-3 shadow-lg', VARIANT_CLASSES[item.variant ?? 'default'])}
             >
               <Icon name={VARIANT_ICON[item.variant ?? 'default']} filled />
               <div className="flex-1">

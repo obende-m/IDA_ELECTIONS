@@ -12,8 +12,8 @@ export interface ProgressBarProps {
 export function ProgressBar({ value, max = 100, className, trackClassName, barClassName }: ProgressBarProps) {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
   return (
-    <div className={cn('w-full h-2 bg-surface-container overflow-hidden', trackClassName, className)}>
-      <div className={cn('h-full bg-primary transition-all', barClassName)} style={{ width: `${pct}%` }} />
+    <div className={cn('w-full h-2 bg-surface-container overflow-hidden rounded-full', trackClassName, className)}>
+      <div className={cn('h-full bg-primary transition-all rounded-full', barClassName)} style={{ width: `${pct}%` }} />
     </div>
   );
 }
