@@ -203,8 +203,8 @@ async function writeSnapshot(db: DbClient, electionId: string, certifiedById: st
   return analytics;
 }
 
-/** Called from inside closeElection's transaction — computes and freezes the final analytics payload. */
-export async function certifyElectionResults(tx: Prisma.TransactionClient, electionId: string, certifiedById: string): Promise<void> {
+/** Called from inside closeElection's transaction — computes and freezes the final analytics payload. certifiedById is null for system-triggered (scheduled) closes. */
+export async function certifyElectionResults(tx: Prisma.TransactionClient, electionId: string, certifiedById: string | null): Promise<void> {
   await writeSnapshot(tx, electionId, certifiedById);
 }
 

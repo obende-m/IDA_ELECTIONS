@@ -169,14 +169,19 @@ export async function closeElection(actor: Actor, req?: import('express').Reques
     throw new AppError('This election is already closed.', 409);
   }
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const result = await tx.election.update({
-      where: { id: election.id },
-      data: { status: 'CLOSED', isLocked: true, lockedAt: new Date(), lockedById: actor.id },
-    });
-    await certifyElectionResults(tx, election.id, actor.id);
-    return result;
-  });
+  const updated = await prisma.$transaction(
+    async (tx) => {
+      const result = await tx.election.update({
+        where: { id: election.id },
+        data: { status: 'CLOSED', isLocked: true, lockedAt: new Date(), lockedById: actor.id },
+      });
+      await certifyElectionResults(tx, election.id, actor.id);
+      return result;
+    },
+    // Default 5s interactive-transaction timeout is too tight for certifyElectionResults' read
+    // fan-out (positions/candidates/activity/audit log) over the network to Supabase's pooler.
+    { timeout: 15000 }
+  );
 
   await writeAuditLog({
     action: 'ELECTION_CLOSED',
