@@ -115,6 +115,22 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
   const abstainedPositionIds = input.selections.filter((s) => s.candidateIds.length === 0).map((s) => s.positionId);
 
   await prisma.$transaction(async (tx) => {
+    // Share-lock the election row for the duration of this ballot. closeElection/lockElection take an
+    // exclusive row lock when they update the election, so a vote is either fully committed before the
+    // election closes (and therefore inside the certified snapshot) or sees the closed/locked state here
+    // and is rejected — never counted after certification.
+    await tx.$queryRaw`SELECT id FROM elections WHERE id = ${token.electionId} FOR SHARE`;
+    const live = await tx.election.findUniqueOrThrow({
+      where: { id: token.electionId },
+      select: { status: true, isLocked: true },
+    });
+    if (live.status !== 'ACTIVE') {
+      throw new AppError('Voting is not currently open for this election.', 409);
+    }
+    if (live.isLocked) {
+      throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
+    }
+
     const claimed = await tx.votingToken.updateMany({
       where: { id: token.id, status: 'ISSUED' },
       data: { status: 'CONSUMED', consumedAt: castAt },

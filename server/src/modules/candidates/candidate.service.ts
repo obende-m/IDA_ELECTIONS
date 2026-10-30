@@ -2,7 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import { writeAuditLog } from '../../lib/audit';
 import { assertElectionNotLocked } from '../../lib/electionLock';
-import { assertNoVotesForCandidate } from '../../lib/voteIntegrity';
+import { assertBallotStructureEditable, assertNoVotesForCandidate } from '../../lib/voteIntegrity';
 import { uploadCandidatePhoto, removeCandidatePhoto as deleteStoredPhoto } from '../../lib/storage';
 import type { Actor } from '../../lib/actor';
 import type { CreateCandidateInput, UpdateCandidateInput } from './candidate.validation';
@@ -37,6 +37,7 @@ export async function createCandidate(
   req?: import('express').Request
 ) {
   await assertElectionNotLocked(electionId);
+  await assertBallotStructureEditable(electionId);
   await assertPositionBelongsToElection(electionId, input.positionId);
 
   const displayOrder = input.displayOrder ?? (await prisma.candidate.count({ where: { positionId: input.positionId } }));

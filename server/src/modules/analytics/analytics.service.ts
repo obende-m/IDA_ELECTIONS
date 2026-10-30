@@ -31,6 +31,8 @@ export interface PositionResult {
   candidates: CandidateResult[];
   winner: CandidateResult | null;
   runnerUp: CandidateResult | null;
+  /** True when the vote counts at the cut-off for the seat(s) are equal and above zero, so no single winner can be declared. Absent on snapshots certified before this field existed. */
+  tied?: boolean;
 }
 
 export interface TimelinePoint {
@@ -133,7 +135,13 @@ async function computeLiveAnalytics(electionId: string, db: DbClient = prisma): 
         pct: ballotsCast > 0 ? round2((voteCount / ballotsCast) * 100) : 0,
       };
     });
+    // Deterministic order: votes desc, then display order (candidates are already in displayOrder, sort is stable).
     const ranked = [...candidates].sort((a, b) => b.voteCount - a.voteCount);
+    // Seats = maxSelections: a tie matters when the candidate in the last seat has the same count as the first one outside.
+    const seats = Math.max(1, position.maxSelections);
+    const lastIn = ranked[seats - 1];
+    const firstOut = ranked[seats];
+    const tied = !!lastIn && !!firstOut && lastIn.voteCount > 0 && lastIn.voteCount === firstOut.voteCount;
     return {
       id: position.id,
       title: position.title,
@@ -142,6 +150,7 @@ async function computeLiveAnalytics(electionId: string, db: DbClient = prisma): 
       candidates,
       winner: ranked[0] ?? null,
       runnerUp: ranked[1] ?? null,
+      tied,
     };
   });
 

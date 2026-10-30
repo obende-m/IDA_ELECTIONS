@@ -2,7 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import { writeAuditLog } from '../../lib/audit';
 import { assertElectionNotLocked } from '../../lib/electionLock';
-import { assertNoVotesForPosition } from '../../lib/voteIntegrity';
+import { assertBallotStructureEditable, assertNoVotesForPosition } from '../../lib/voteIntegrity';
 import type { Actor } from '../../lib/actor';
 import type { CreatePositionInput, UpdatePositionInput } from './position.validation';
 
@@ -22,6 +22,7 @@ export async function getPosition(electionId: string, positionId: string) {
 
 export async function createPosition(electionId: string, input: CreatePositionInput, actor: Actor, req?: import('express').Request) {
   await assertElectionNotLocked(electionId);
+  await assertBallotStructureEditable(electionId);
 
   const displayOrder = input.displayOrder ?? (await prisma.position.count({ where: { electionId } }));
 
@@ -64,6 +65,9 @@ export async function updatePosition(
 ) {
   await assertElectionNotLocked(electionId);
   const position = await getPosition(electionId, positionId);
+  if (input.maxSelections !== undefined && input.maxSelections !== position.maxSelections) {
+    await assertBallotStructureEditable(electionId);
+  }
 
   const updated = await prisma.position.update({
     where: { id: position.id },

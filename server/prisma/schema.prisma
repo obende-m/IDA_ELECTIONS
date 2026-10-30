@@ -124,6 +124,7 @@ model Position {
   votes         Vote[]
   tally         PositionTally?
 
+  @@index([electionId])
   @@map("positions")
 }
 
@@ -142,6 +143,7 @@ model Candidate {
   votes        Vote[]
   tally        CandidateTally?
 
+  @@index([positionId])
   @@map("candidates")
 }
 
@@ -163,6 +165,7 @@ model Voter {
   votes            Vote[]
 
   @@unique([electionId, membershipNumber])
+  @@index([electionId, votingStatus])
   @@map("voters")
 }
 
@@ -197,6 +200,7 @@ model VotingToken {
   replacedBy      VotingToken? @relation("TokenChain")
 
   @@index([voterId])
+  @@index([electionId, status])
   @@map("voting_tokens")
 }
 
@@ -220,6 +224,9 @@ model Vote {
   @@unique([voterId, positionId, candidateId])
   @@index([electionId])
   @@index([referenceNumber])
+  @@index([positionId])
+  @@index([candidateId])
+  @@index([electionId, castAt])
   @@map("votes")
 }
 
@@ -241,6 +248,8 @@ model AuditLog {
   electionId String?
   election   Election? @relation(fields: [electionId], references: [id], onDelete: SetNull)
 
+  @@index([electionId, timestamp])
+  @@index([electionId, action])
   @@map("audit_logs")
 }
 

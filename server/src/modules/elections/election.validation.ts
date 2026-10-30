@@ -4,8 +4,8 @@ export const upsertElectionSchema = z.object({
   title: z.string().trim().min(1, 'Title is required'),
   year: z.coerce.number().int().min(2000).max(2200),
   description: z.string().trim().optional().or(z.literal('')),
-  startTime: z.coerce.date().optional(),
-  endTime: z.coerce.date().optional(),
+  startTime: z.preprocess((v) => (v === '' ? null : v), z.coerce.date().nullable().optional()),
+  endTime: z.preprocess((v) => (v === '' ? null : v), z.coerce.date().nullable().optional()),
 });
 
 export const updateElectionSchema = upsertElectionSchema.partial();
