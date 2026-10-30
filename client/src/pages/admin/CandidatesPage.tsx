@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Badge, Button, DataTable, Field, Icon, SelectField, useToast, type DataTableColumn } from '../../components/ui';
+import { useSearchParams } from 'react-router-dom';
+import { ActionMenu, Badge, Button, Card, DataTable, PageHeader, SearchInput, Tabs, useConfirm, useToast, type DataTableColumn } from '../../components/ui';
 import { useCandidatesList, useDeleteCandidate } from '../../features/candidates/useCandidates';
 import { CandidateFormModal } from '../../features/candidates/CandidateFormModal';
 import { usePositionsList } from '../../features/positions/usePositions';
@@ -7,29 +8,45 @@ import { useCurrentElection } from '../../features/elections/useElection';
 import { LockBanner } from '../../features/elections/LockBanner';
 import type { Candidate } from '../../features/candidates/types';
 
-/** Ported from candidate_management_admin_portal/code.html; wired to real candidate CRUD in the Election/Position/Candidate module. */
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join('');
+}
+
+/** Candidates grouped by contest via tabs (reference 1: listing + search + tabs + row actions). */
 export function CandidatesPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
+  const [params, setParams] = useSearchParams();
+  const positionFilter = params.get('position') ?? 'all';
   const [search, setSearch] = useState('');
-  const [positionFilter, setPositionFilter] = useState('all');
   const [formCandidate, setFormCandidate] = useState<Candidate | null | undefined>(undefined);
 
   const { data: positionsData } = usePositionsList();
-  const { data: candidatesData, isLoading, isError, error, refetch } = useCandidatesList(positionFilter === 'all' ? undefined : positionFilter);
+  const { data: candidatesData, isLoading, isError, error, refetch } = useCandidatesList();
   const { data: electionData } = useCurrentElection();
   const election = electionData?.election;
   const isLocked = election?.isLocked ?? false;
   const deleteCandidate = useDeleteCandidate();
+  const positions = positionsData?.positions ?? [];
+  const all = candidatesData?.candidates ?? [];
 
   const candidates = useMemo(() => {
-    const all = candidatesData?.candidates ?? [];
-    if (!search.trim()) return all;
     const term = search.trim().toLowerCase();
-    return all.filter((c) => c.name.toLowerCase().includes(term) || c.position?.title.toLowerCase().includes(term));
-  }, [candidatesData, search]);
+    return all.filter(
+      (c) =>
+        (positionFilter === 'all' || c.positionId === positionFilter || c.position?.id === positionFilter) &&
+        (!term || c.name.toLowerCase().includes(term) || c.position?.title.toLowerCase().includes(term))
+    );
+  }, [all, search, positionFilter]);
 
   const handleDelete = async (candidate: Candidate) => {
-    if (!window.confirm(`Delete "${candidate.name}"? This cannot be undone.`)) return;
+    const ok = await confirm({ title: `Delete ${candidate.name}?`, message: 'They will be removed from the ballot. This cannot be undone.', confirmLabel: 'Delete candidate', tone: 'danger' });
+    if (!ok) return;
     try {
       await deleteCandidate.mutateAsync(candidate.id);
       toast({ title: 'Candidate deleted', variant: 'success' });
@@ -40,121 +57,100 @@ export function CandidatesPage() {
 
   const columns: DataTableColumn<Candidate>[] = [
     {
-      key: 'details',
-      header: 'Candidate Details',
+      key: 'name',
+      header: 'Candidate',
+      sortValue: (r) => r.name,
       render: (row) => (
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 overflow-hidden">
-            {row.photoUrl ? (
-              <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
-            ) : (
-              <Icon name="account_circle" className="text-secondary" size={28} />
-            )}
-          </div>
-          <div>
-            <p className="text-headline-sm font-headline-sm">{row.name}</p>
-            {row.bio && <p className="text-label-sm font-label-sm text-secondary line-clamp-1 max-w-xs">{row.bio}</p>}
+        <div className="flex items-center gap-3.5">
+          {row.photoUrl ? (
+            <img src={row.photoUrl} alt="" loading="lazy" className="w-11 h-11 rounded-xl object-cover bg-surface-container shrink-0" />
+          ) : (
+            <span className="w-11 h-11 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-serif shrink-0" aria-hidden="true">
+              {initials(row.name)}
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="font-medium">{row.name}</p>
+            {row.bio ? <p className="text-[0.8125rem] text-secondary line-clamp-1 max-w-md">{row.bio}</p> : <p className="text-[0.8125rem] text-outline italic">No biography</p>}
           </div>
         </div>
       ),
     },
+    { key: 'position', header: 'Contest', sortValue: (r) => r.position?.title ?? '', render: (row) => <Badge variant="outline">{row.position?.title ?? '—'}</Badge> },
     {
-      key: 'position',
-      header: 'Position Title',
-      render: (row) => <Badge variant="outline">{row.position?.title ?? '—'}</Badge>,
+      key: 'photo',
+      header: 'Photo',
+      hideOnMobile: true,
+      render: (row) => (row.photoUrl ? <Badge variant="success" icon="check">Added</Badge> : <Badge variant="neutral">Missing</Badge>),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: '',
       align: 'right',
       render: (row) => (
-        <div className="flex justify-end gap-2">
-          <button
-            className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high hover:border-on-background transition-colors disabled:opacity-40 disabled:pointer-events-none"
-            aria-label={`Edit ${row.name}`}
-            disabled={isLocked}
-            onClick={() => setFormCandidate(row)}
-          >
-            <Icon name="edit" size={18} />
-          </button>
-          <button
-            className="w-9 h-9 rounded-lg flex items-center justify-center border border-error text-error hover:bg-error hover:text-on-error transition-colors disabled:opacity-40 disabled:pointer-events-none"
-            aria-label={`Delete ${row.name}`}
-            disabled={isLocked}
-            onClick={() => handleDelete(row)}
-          >
-            <Icon name="delete" size={18} />
-          </button>
+        <div className="flex justify-end">
+          <ActionMenu
+            label={`Actions for ${row.name}`}
+            items={[
+              { label: 'Edit details & photo', icon: 'edit', disabled: isLocked, onSelect: () => setFormCandidate(row) },
+              { label: 'Delete candidate', icon: 'delete', tone: 'danger', disabled: isLocked, onSelect: () => handleDelete(row) },
+            ]}
+          />
         </div>
       ),
     },
   ];
 
-  const positions = positionsData?.positions ?? [];
+  const tabItems = [
+    { value: 'all', label: 'All contests', count: all.length },
+    ...positions.map((p) => ({ value: p.id, label: p.title, count: all.filter((c) => c.positionId === p.id || c.position?.id === p.id).length })),
+  ];
 
   return (
     <>
       {election && <LockBanner election={election} />}
-
-      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
-        <div>
-          <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Candidate Management</h1>
-          <p className="text-body-lg text-secondary">Oversee official ballot entries for {election?.title ?? 'the current election'}.</p>
-        </div>
-        <Button
-          variant="primary"
-          leftIcon="add"
-          uppercase
-          disabled={isLocked || positions.length === 0}
-          onClick={() => setFormCandidate(null)}
-        >
-          Add Candidate
-        </Button>
-      </section>
-
-      {positions.length === 0 && (
-        <p className="text-body-md text-secondary italic">Add at least one position before adding candidates.</p>
+      <PageHeader
+        kicker="Ballot"
+        title="Candidates"
+        description={`Everyone standing in ${election?.title ?? 'the current election'}. Shown to voters in the same neutral format.`}
+        actions={
+          <Button leftIcon="add" disabled={isLocked || positions.length === 0} onClick={() => setFormCandidate(null)}>
+            Add candidate
+          </Button>
+        }
+      />
+      {positions.length === 0 && !isLoading && (
+        <p className="rounded-xl border border-warning/25 bg-warning-soft px-4 py-3 text-[0.875rem] text-warning">Add at least one position before adding candidates.</p>
       )}
 
-      <section className="bg-surface-container-low border border-outline-variant rounded-xl shadow-sm p-6 flex flex-col md:flex-row gap-6 items-end">
-        <div className="flex-1 w-full">
-          <Field
-            icon="search"
-            placeholder="Search by name or position..."
-            aria-label="Search candidates"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+      <Card className="overflow-hidden">
+        <div className="px-5 sm:px-6 pt-2">
+          <Tabs
+            label="Filter by contest"
+            value={positionFilter}
+            onChange={(v) => setParams(v === 'all' ? {} : { position: v }, { replace: true })}
+            items={tabItems}
           />
         </div>
-        <SelectField label="Filter by Position" value={positionFilter} onChange={(e) => setPositionFilter(e.target.value)}>
-          <option value="all">All Positions</option>
-          {positions.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.title}
-            </option>
-          ))}
-        </SelectField>
-      </section>
-
-      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+        <div className="px-5 sm:px-6 py-4 border-b border-outline-variant">
+          <SearchInput value={search} onChange={setSearch} label="Search candidates" placeholder="Search by name or contest…" className="max-w-md" />
+        </div>
         <DataTable
           columns={columns}
           rows={candidates}
           rowKey={(row) => row.id}
           label="Candidates"
-          emptyMessage={search.trim() || positionFilter !== 'all' ? 'No candidates match your filters.' : 'No candidates yet. Use Add Candidate to create the first one.'}
+          emptyMessage={search.trim() || positionFilter !== 'all' ? 'No candidates match this view.' : 'No candidates yet — add the first one.'}
           isLoading={isLoading}
           error={isError ? error : undefined}
           onRetry={() => refetch()}
         />
         {candidates.length > 0 && (
-          <div className="flex justify-between items-center px-4 py-4 bg-surface-container-lowest border-t border-outline-variant">
-            <p className="text-label-md font-label-md text-secondary">
-              Showing {candidates.length} of {candidates.length} candidates
-            </p>
-          </div>
+          <p className="px-5 sm:px-6 py-3 text-[0.8125rem] text-secondary border-t border-outline-variant">
+            Showing {candidates.length} of {all.length} candidates
+          </p>
         )}
-      </section>
+      </Card>
 
       <CandidateFormModal
         open={formCandidate !== undefined}

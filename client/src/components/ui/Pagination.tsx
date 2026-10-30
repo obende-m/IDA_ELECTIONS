@@ -3,36 +3,59 @@ import { Icon } from './Icon';
 export interface PaginationProps {
   page: number;
   totalPages: number;
-  /** Summary text shown on the left, e.g. "Page 1 of 3 — 52 voters". */
   summary: string;
   onPageChange: (page: number) => void;
 }
 
-const BUTTON_CLASS =
-  'w-10 h-10 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 disabled:pointer-events-none transition-colors';
+const BTN =
+  'h-9 min-w-9 px-2 rounded-lg flex items-center justify-center text-[0.8125rem] tabular border border-transparent ' +
+  'hover:border-outline-variant hover:bg-surface-container-lowest disabled:opacity-35 disabled:pointer-events-none transition-colors';
 
-/** Previous/next footer shared by every paginated admin table. */
+function pageList(page: number, total: number): (number | '…')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const set = new Set([1, total, page - 1, page, page + 1].filter((p) => p >= 1 && p <= total));
+  const sorted = [...set].sort((a, b) => a - b);
+  const out: (number | '…')[] = [];
+  sorted.forEach((p, i) => {
+    if (i && p - (sorted[i - 1] as number) > 1) out.push('…');
+    out.push(p);
+  });
+  return out;
+}
+
 export function Pagination({ page, totalPages, summary, onPageChange }: PaginationProps) {
+  const total = Math.max(1, totalPages);
   return (
-    <nav
-      aria-label="Pagination"
-      className="flex flex-wrap justify-between items-center gap-3 px-4 py-4 bg-surface-container-lowest border-t border-outline-variant"
-    >
-      <p className="text-label-md font-label-md text-secondary" aria-live="polite">
+    <nav aria-label="Pagination" className="flex flex-wrap justify-between items-center gap-3 px-4 py-3 border-t border-outline-variant">
+      <p className="text-[0.8125rem] text-secondary tabular" aria-live="polite">
         {summary}
       </p>
-      <div className="flex gap-2">
-        <button type="button" className={BUTTON_CLASS} aria-label="Previous page" disabled={page <= 1} onClick={() => onPageChange(Math.max(1, page - 1))}>
-          <Icon name="chevron_left" size={18} />
+      <div className="flex items-center gap-1">
+        <button type="button" className={BTN} aria-label="Previous page" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          <Icon name="chevron_left" size={16} />
         </button>
-        <button
-          type="button"
-          className={BUTTON_CLASS}
-          aria-label="Next page"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-        >
-          <Icon name="chevron_right" size={18} />
+        <span className="hidden sm:contents">
+          {pageList(page, total).map((p, i) =>
+            p === '…' ? (
+              <span key={`e${i}`} className="px-1 text-secondary" aria-hidden="true">
+                …
+              </span>
+            ) : (
+              <button
+                key={p}
+                type="button"
+                aria-label={`Page ${p}`}
+                aria-current={p === page ? 'page' : undefined}
+                onClick={() => onPageChange(p)}
+                className={p === page ? `${BTN} !bg-on-background !text-on-primary` : BTN}
+              >
+                {p}
+              </button>
+            )
+          )}
+        </span>
+        <button type="button" className={BTN} aria-label="Next page" disabled={page >= total} onClick={() => onPageChange(page + 1)}>
+          <Icon name="chevron_right" size={16} />
         </button>
       </div>
     </nav>

@@ -83,7 +83,7 @@ export function ImportVotersModal({ open, onClose }: ImportVotersModalProps) {
             {REPORT_ROWS.map((r) => (
               <div key={r.key} className="rounded-lg border border-outline-variant shadow-sm p-4 text-center">
                 <p className={`text-headline-lg font-headline-lg ${r.tone}`}>{report[r.key].length}</p>
-                <p className="text-label-sm font-label-sm text-secondary uppercase tracking-widest">{r.label}</p>
+                <p className="text-label-sm font-label-sm text-secondary">{r.label}</p>
               </div>
             ))}
           </div>

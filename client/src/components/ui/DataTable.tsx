@@ -1,8 +1,7 @@
-import type { ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 import { Button } from './Button';
 import { Icon } from './Icon';
-import { Spinner } from './StateViews';
 
 export interface DataTableColumn<T> {
   key: string;
@@ -10,6 +9,10 @@ export interface DataTableColumn<T> {
   align?: 'left' | 'right' | 'center';
   render: (row: T) => ReactNode;
   className?: string;
+  /** Makes the column sortable (client-side, current page) by this value. */
+  sortValue?: (row: T) => string | number | null | undefined;
+  /** Hide on narrow screens (row stays readable on phones). */
+  hideOnMobile?: boolean;
 }
 
 export interface DataTableProps<T> {
@@ -18,24 +21,19 @@ export interface DataTableProps<T> {
   rowKey: (row: T) => string;
   emptyMessage?: string;
   className?: string;
-  /** Accessible name for the table (announced by screen readers). */
   label?: string;
-  /** Shows a loading row instead of the empty message while the first page of data loads. */
   isLoading?: boolean;
-  /** When set (and there are no rows to show), renders an error row with a Retry button. */
   error?: unknown;
   onRetry?: () => void;
+  /** Highlights a row (reference 3: the inverted "current" row). */
+  isRowActive?: (row: T) => boolean;
 }
 
-const ALIGN_CLASS: Record<'left' | 'right' | 'center', string> = {
-  left: 'text-left',
-  right: 'text-right',
-  center: 'text-center',
-};
+const ALIGN: Record<'left' | 'right' | 'center', string> = { left: 'text-left', right: 'text-right', center: 'text-center' };
 
 /**
- * Neutral-header data table with soft row dividers and a subtle hover state, no zebra striping (DESIGN.md Data Tables).
- * The wrapper scrolls horizontally on narrow screens so wide tables never break the page layout.
+ * Editorial data table: mono uppercase headers, hairline row rules, no zebra, generous row height, sortable headers,
+ * skeleton loading rows, and an inline error with retry. Scrolls horizontally inside its own frame on small screens.
  */
 export function DataTable<T>({
   columns,
@@ -47,38 +45,70 @@ export function DataTable<T>({
   isLoading,
   error,
   onRetry,
+  isRowActive,
 }: DataTableProps<T>) {
+  const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
   const showError = Boolean(error) && rows.length === 0;
   const showLoading = !showError && Boolean(isLoading) && rows.length === 0;
 
+  const sorted = useMemo(() => {
+    if (!sort) return rows;
+    const col = columns.find((c) => c.key === sort.key);
+    if (!col?.sortValue) return rows;
+    const get = col.sortValue;
+    return [...rows].sort((a, b) => {
+      const va = get(a);
+      const vb = get(b);
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      const cmp = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb), undefined, { numeric: true });
+      return sort.dir === 'asc' ? cmp : -cmp;
+    });
+  }, [rows, sort, columns]);
+
+  const toggleSort = (key: string) =>
+    setSort((s) => (s?.key !== key ? { key, dir: 'asc' } : s.dir === 'asc' ? { key, dir: 'desc' } : null));
+
   return (
     <div className={cn('w-full overflow-x-auto', className)} tabIndex={0} role="region" aria-label={label ?? 'Data table'}>
-      <table className="w-full border-collapse min-w-[40rem]" aria-busy={isLoading ? true : undefined}>
+      <table className="w-full border-collapse md:min-w-[36rem]" aria-busy={isLoading ? true : undefined}>
+        {label && <caption className="sr-only">{label}</caption>}
         <thead>
-          <tr className="bg-surface-container-low border-b border-outline-variant">
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                scope="col"
-                className={cn(
-                  'px-4 py-3 text-label-md font-label-md uppercase tracking-widest text-on-background whitespace-nowrap',
-                  ALIGN_CLASS[col.align ?? 'left']
-                )}
-              >
-                {col.header}
-              </th>
-            ))}
+          <tr className="border-b border-on-background/80">
+            {columns.map((col) => {
+              const active = sort?.key === col.key;
+              return (
+                <th
+                  key={col.key}
+                  scope="col"
+                  aria-sort={active ? (sort!.dir === 'asc' ? 'ascending' : 'descending') : col.sortValue ? 'none' : undefined}
+                  className={cn('px-4 pt-3 pb-2.5 eyebrow !text-on-background font-medium whitespace-nowrap', ALIGN[col.align ?? 'left'], col.hideOnMobile && 'hidden md:table-cell')}
+                >
+                  {col.sortValue ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleSort(col.key)}
+                      className={cn('inline-flex items-center gap-1 uppercase tracking-[inherit] hover:text-primary', col.align === 'right' && 'flex-row-reverse')}
+                    >
+                      {col.header}
+                      <Icon name={active ? (sort!.dir === 'asc' ? 'expand_less' : 'expand_more') : 'unfold'} size={13} className={active ? 'text-primary' : 'text-secondary'} />
+                    </button>
+                  ) : (
+                    col.header
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
           {showError ? (
             <tr>
-              <td colSpan={columns.length} className="px-4 py-10 text-center">
+              <td colSpan={columns.length} className="px-4 py-14 text-center">
                 <div role="alert" className="flex flex-col items-center gap-3">
-                  <Icon name="error" filled size={28} className="text-error" />
-                  <p className="text-body-md text-secondary">
-                    {error instanceof Error && error.message ? error.message : 'Could not load this data.'}
-                  </p>
+                  <Icon name="error" size={26} className="text-error" />
+                  <p className="text-body-md text-secondary">{error instanceof Error && error.message ? error.message : 'Could not load this data.'}</p>
                   {onRetry && (
                     <Button variant="secondary" size="sm" leftIcon="refresh" onClick={onRetry}>
                       Try again
@@ -88,30 +118,45 @@ export function DataTable<T>({
               </td>
             </tr>
           ) : showLoading ? (
-            <tr>
-              <td colSpan={columns.length} className="px-4 py-10 text-center">
-                <div role="status" className="flex items-center justify-center gap-3 text-secondary">
-                  <Spinner />
-                  <span className="text-body-md">Loading…</span>
-                </div>
-              </td>
-            </tr>
-          ) : rows.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length} className="px-4 py-10 text-center text-body-md text-secondary">
-                {emptyMessage}
-              </td>
-            </tr>
-          ) : (
-            rows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-surface-container-high hover:bg-surface-container-low/60 transition-colors">
-                {columns.map((col) => (
-                  <td key={col.key} className={cn('px-4 py-4 text-body-md align-middle', col.className, ALIGN_CLASS[col.align ?? 'left'])}>
-                    {col.render(row)}
+            Array.from({ length: 5 }, (_, i) => (
+              <tr key={i} className="border-b border-outline-variant" aria-hidden={i > 0 ? true : undefined}>
+                {columns.map((col, j) => (
+                  <td key={col.key} className={cn('px-4 py-4', col.hideOnMobile && 'hidden md:table-cell')}>
+                    {i === 0 && j === 0 && <span className="sr-only" role="status">Loading…</span>}
+                    <div className="skeleton h-3.5" style={{ width: `${45 + ((i * 7 + j * 13) % 45)}%` }} />
                   </td>
                 ))}
               </tr>
             ))
+          ) : sorted.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length} className="px-4 py-14 text-center text-body-md text-secondary">
+                <Icon name="inbox" size={24} className="mx-auto mb-2 text-outline" />
+                {emptyMessage}
+              </td>
+            </tr>
+          ) : (
+            sorted.map((row) => {
+              const active = isRowActive?.(row);
+              return (
+                <tr
+                  key={rowKey(row)}
+                  className={cn(
+                    'border-b border-outline-variant transition-colors duration-150',
+                    active ? 'bg-on-background text-on-primary [&_.text-secondary]:text-on-primary/70' : 'hover:bg-surface-bright'
+                  )}
+                >
+                  {columns.map((col) => (
+                    <td
+                      key={col.key}
+                      className={cn('px-4 py-3.5 text-[0.9rem] align-middle', ALIGN[col.align ?? 'left'], col.hideOnMobile && 'hidden md:table-cell', col.className)}
+                    >
+                      {col.render(row)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

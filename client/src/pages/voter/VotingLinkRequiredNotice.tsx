@@ -1,47 +1,24 @@
-import { Icon } from '../../components/ui';
+import { Link } from 'react-router-dom';
+import { StatusScreen } from '../../components/voter/VoterChrome';
 
 /**
- * Shown whenever a voter lands on a step of the ballot flow (verify, select, review) without a
- * resolved personal-link session — e.g. navigating directly instead of following the link the
- * Electoral Committee sent. Voting is intentionally link-only (no manual membership-number/token
- * entry form), so this explains that rather than leaving the voter on a bare error state.
+ * Shown when a voter reaches a ballot step without a resolved personal-link session. Voting is link-only by
+ * design (no manual token entry), so this explains how to get back in.
  */
 export function VotingLinkRequiredNotice() {
   return (
-    <>
-      <header className="w-full flex items-center justify-center h-16 bg-surface border-b border-outline-variant shadow-sm">
-        <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
-      </header>
-
-      <main className="flex-grow flex flex-col items-center justify-center px-4 sm:px-margin-mobile py-16 text-center">
-        <div className="w-24 h-24 rounded-full bg-on-background shadow-sm flex items-center justify-center mb-8">
-          <Icon name="link" filled size={44} className="text-primary-container" />
-        </div>
-
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-container-high border border-outline-variant mb-6">
-          <span className="w-2 h-2 rounded-full bg-secondary" />
-          <span className="text-label-md font-label-md uppercase tracking-widest text-secondary">Personal Link Required</span>
-        </div>
-
-        <h1 className="text-headline-lg font-headline-lg uppercase mb-3">No Active Voting Session</h1>
-        <p className="text-body-lg text-secondary max-w-sm">
-          Voting is accessed only through the personal link the Electoral Committee sent to you. Please open that link
-          again to continue — this page cannot be reached directly.
-        </p>
-
-        <div className="mt-10 p-4 rounded-r-lg border-l-4 border-primary bg-primary-container/10 max-w-sm text-left">
-          <p className="text-label-sm font-label-sm text-primary uppercase mb-1">Can't find your link?</p>
-          <p className="text-body-md text-on-surface-variant leading-relaxed">
-            Contact the Electoral Committee and they can resend it to you.
-          </p>
-        </div>
-      </main>
-
-      <footer className="py-8 px-margin-mobile border-t border-outline-variant text-center">
-        <p className="text-label-sm font-label-sm text-secondary">
-          © {new Date().getFullYear()} Igarra Development Association (IDA). Secure Electronic Voting System.
-        </p>
-      </footer>
-    </>
+    <StatusScreen
+      icon="link"
+      kicker="Personal link required"
+      title="Open your voting link to continue"
+      action={
+        <Link to="/vote" className="inline-flex items-center gap-2 h-11 px-5 rounded-lg border border-outline-variant bg-surface-container-lowest text-[0.875rem] font-medium hover:border-outline">
+          How voting works
+        </Link>
+      }
+      aside={{ title: "Can't find your link?", body: 'Contact the IDA Electoral Committee — they can resend it or issue a new one.' }}
+    >
+      Voting is only available through the private link the Electoral Committee sent you. If you closed this page part-way, open that link again — your choices are kept on this device until you cast your vote.
+    </StatusScreen>
   );
 }

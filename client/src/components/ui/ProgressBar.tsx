@@ -6,14 +6,22 @@ export interface ProgressBarProps {
   className?: string;
   trackClassName?: string;
   barClassName?: string;
+  label?: string;
 }
 
-/** Thin linear progress track used for turnout KPIs and the mobile voting-position stepper. */
-export function ProgressBar({ value, max = 100, className, trackClassName, barClassName }: ProgressBarProps) {
-  const pct = Math.min(100, Math.max(0, (value / max) * 100));
+/** Thin linear track; animates width changes. */
+export function ProgressBar({ value, max = 100, className, trackClassName, barClassName, label }: ProgressBarProps) {
+  const pct = Math.min(100, Math.max(0, max > 0 ? (value / max) * 100 : 0));
   return (
-    <div className={cn('w-full h-2 bg-surface-container overflow-hidden rounded-full', trackClassName, className)}>
-      <div className={cn('h-full bg-primary transition-all rounded-full', barClassName)} style={{ width: `${pct}%` }} />
+    <div
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={Math.round(value)}
+      className={cn('w-full h-1.5 bg-surface-container overflow-hidden rounded-full', trackClassName, className)}
+    >
+      <div className={cn('h-full bg-primary rounded-full transition-[width] duration-700 ease-[var(--ease-out-quart)]', barClassName)} style={{ width: `${pct}%` }} />
     </div>
   );
 }

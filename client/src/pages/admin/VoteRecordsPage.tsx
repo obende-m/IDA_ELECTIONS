@@ -1,62 +1,42 @@
-import { useState } from 'react';
-import { Badge, DataTable, Field, Icon, Pagination, type DataTableColumn } from '../../components/ui';
+import { useEffect, useState } from 'react';
+import { Badge, Card, DataTable, PageHeader, Pagination, SearchInput, type DataTableColumn } from '../../components/ui';
+import { RestrictedNotice, SensitiveNote } from '../../components/AdminNotices';
 import { useVoteRecords } from '../../features/voteRecords/useVoteRecords';
 import { useAuth } from '../../features/auth/AuthContext';
+import { useDebounced } from '../../lib/useDebounced';
 import type { VoteRecord } from '../../features/voteRecords/types';
 
 const PAGE_SIZE = 25;
-const AUTHORIZED_ROLES = ['SUPER_ADMIN', 'ELECTION_COMMITTEE'];
+const AUTHORIZED = ['SUPER_ADMIN', 'ELECTION_COMMITTEE'];
 
-/**
- * No Stitch mock exists for this screen. Individual vote records are visible here only —
- * ELECTION_COMMITTEE / SUPER_ADMIN roles, server-enforced, never exposed via exports or public
- * APIs. Every load of this page is itself written to the audit log (see voting.service.ts).
- */
+/** Election Committee / Super Admin only (server-enforced); every load is itself audit-logged. */
 export function VoteRecordsPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
+  const debounced = useDebounced(search, 350);
   const [page, setPage] = useState(1);
-  const isAuthorized = Boolean(user && AUTHORIZED_ROLES.includes(user.role));
-  const { data, isLoading, isError, error, refetch } = useVoteRecords(
-    { search: search || undefined, page, pageSize: PAGE_SIZE },
-    { enabled: isAuthorized }
-  );
+  useEffect(() => setPage(1), [debounced]);
+  const isAuthorized = Boolean(user && AUTHORIZED.includes(user.role));
+  const { data, isLoading, isError, error, refetch } = useVoteRecords({ search: debounced || undefined, page, pageSize: PAGE_SIZE }, { enabled: isAuthorized });
 
-  if (!isAuthorized) {
-    return (
-      <section className="flex flex-col items-center justify-center text-center gap-4 rounded-xl border border-error shadow-sm py-24 px-8">
-        <Icon name="lock" filled size={32} className="text-error" />
-        <h1 className="text-headline-md font-headline-md uppercase">Access Restricted</h1>
-        <p className="text-body-md text-secondary max-w-md">
-          Individual vote records are only visible to Election Committee and Super Admin accounts.
-        </p>
-      </section>
-    );
-  }
+  if (!isAuthorized) return <RestrictedNotice>Individual vote records are only visible to Election Committee and Super Admin accounts.</RestrictedNotice>;
 
   const columns: DataTableColumn<VoteRecord>[] = [
     {
       key: 'voter',
       header: 'Voter',
+      sortValue: (r) => r.voterName,
       render: (r) => (
         <div>
-          <p className="text-headline-sm font-headline-sm">{r.voterName}</p>
-          <p className="text-label-sm font-label-sm text-secondary">{r.membershipNumber}</p>
+          <p className="font-medium">{r.voterName}</p>
+          <p className="font-mono text-[0.75rem] text-secondary">{r.membershipNumber}</p>
         </div>
       ),
     },
-    { key: 'position', header: 'Position', render: (r) => <Badge variant="outline">{r.position}</Badge> },
-    { key: 'candidate', header: 'Candidate Selected', render: (r) => r.candidate },
-    {
-      key: 'castAt',
-      header: 'Time Cast',
-      render: (r) => new Date(r.castAt).toLocaleString(),
-    },
-    {
-      key: 'reference',
-      header: 'Reference Number',
-      render: (r) => <span className="font-mono text-label-sm">{r.referenceNumber}</span>,
-    },
+    { key: 'position', header: 'Contest', sortValue: (r) => r.position, render: (r) => <Badge variant="outline">{r.position}</Badge> },
+    { key: 'candidate', header: 'Choice', sortValue: (r) => r.candidate, render: (r) => r.candidate },
+    { key: 'castAt', header: 'Cast', hideOnMobile: true, sortValue: (r) => r.castAt, render: (r) => <span className="text-secondary tabular">{new Date(r.castAt).toLocaleString()}</span> },
+    { key: 'reference', header: 'Reference', hideOnMobile: true, render: (r) => <span className="font-mono text-[0.75rem]">{r.referenceNumber}</span> },
   ];
 
   const total = data?.total ?? 0;
@@ -64,51 +44,17 @@ export function VoteRecordsPage() {
 
   return (
     <>
-      <section className="border-b border-outline-variant pb-6">
-        <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Individual Vote Records</h1>
-        <p className="text-body-lg text-secondary">Election administration and verification only.</p>
-      </section>
-
-      <section className="flex items-start gap-3 bg-on-background text-on-primary rounded-xl shadow-sm border border-primary-container px-6 py-4">
-        <Icon name="visibility" filled className="text-primary-container shrink-0" />
-        <p className="text-body-md text-secondary-fixed">
-          This screen shows who voted for whom. Access is restricted to Election Committee and Super Admin roles. Every time
-          this page is loaded, a permanent audit log entry is created recording your identity, role, timestamp, IP address,
-          and browser — this is by design, not a bug.
-        </p>
-      </section>
-
-      <section className="bg-surface-container-low border border-outline-variant rounded-xl shadow-sm p-6">
-        <Field
-          icon="search"
-          placeholder="Search by voter name or membership number..."
-          aria-label="Search vote records"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-      </section>
-
-      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-        <DataTable
-          columns={columns}
-          rows={data?.records ?? []}
-          rowKey={(r) => r.id}
-          label="Individual vote records"
-          emptyMessage="No vote records match your search."
-          isLoading={isLoading}
-          error={isError ? error : undefined}
-          onRetry={() => refetch()}
-        />
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          summary={total === 0 ? 'No records' : `Page ${page} of ${totalPages} — ${total} records`}
-          onPageChange={setPage}
-        />
-      </section>
+      <PageHeader kicker="Restricted · Committee only" title="Vote records" description="Individual ballots, for verification and dispute resolution only." />
+      <SensitiveNote icon="visibility">
+        This screen shows who voted for whom. Each time it loads, a permanent audit entry records your name, role, time, IP address and browser — by design.
+      </SensitiveNote>
+      <Card className="overflow-hidden">
+        <div className="px-5 sm:px-6 py-4 border-b border-outline-variant">
+          <SearchInput value={search} onChange={setSearch} label="Search vote records" placeholder="Voter name or membership no.…" className="max-w-md" />
+        </div>
+        <DataTable columns={columns} rows={data?.records ?? []} rowKey={(r) => r.id} label="Individual vote records" emptyMessage="No vote records match your search." isLoading={isLoading} error={isError ? error : undefined} onRetry={() => refetch()} />
+        <Pagination page={page} totalPages={totalPages} summary={total === 0 ? 'No records' : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total} records`} onPageChange={setPage} />
+      </Card>
     </>
   );
 }

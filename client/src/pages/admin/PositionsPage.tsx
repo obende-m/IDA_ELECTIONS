@@ -1,28 +1,34 @@
 import { useState } from 'react';
-import { Badge, Button, DataTable, Icon, useToast, type DataTableColumn } from '../../components/ui';
+import { Link, useNavigate } from 'react-router-dom';
+import { ActionMenu, Button, Card, EmptyState, ErrorState, Icon, PageHeader, Skeleton, useConfirm, useToast } from '../../components/ui';
 import { useDeletePosition, usePositionsList } from '../../features/positions/usePositions';
 import { PositionFormModal } from '../../features/positions/PositionFormModal';
 import { useCurrentElection } from '../../features/elections/useElection';
 import { LockBanner } from '../../features/elections/LockBanner';
 import type { Position } from '../../features/positions/types';
 
+/** The ballot, as an ordered editorial list (reference 3): numeral, contest title, seats, candidates, actions. */
 export function PositionsPage() {
   const { toast } = useToast();
-  const { data, isLoading, isError, error, refetch } = usePositionsList();
+  const confirm = useConfirm();
+  const navigate = useNavigate();
+  const { data, isLoading, isError, error, refetch, isFetching } = usePositionsList();
   const { data: electionData } = useCurrentElection();
   const election = electionData?.election;
   const isLocked = election?.isLocked ?? false;
   const [formPosition, setFormPosition] = useState<Position | null | undefined>(undefined);
   const deletePosition = useDeletePosition();
+  const positions = data?.positions ?? [];
 
   const handleDelete = async (position: Position) => {
-    const candidateCount = position._count?.candidates ?? 0;
-    const warning =
-      candidateCount > 0
-        ? `Delete "${position.title}"? This will also delete its ${candidateCount} candidate(s). This cannot be undone.`
-        : `Delete "${position.title}"? This cannot be undone.`;
-    if (!window.confirm(warning)) return;
-
+    const n = position._count?.candidates ?? 0;
+    const ok = await confirm({
+      title: `Delete “${position.title}”?`,
+      message: n > 0 ? `Its ${n} candidate${n > 1 ? 's' : ''} will be deleted too. This cannot be undone.` : 'This cannot be undone.',
+      confirmLabel: 'Delete position',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await deletePosition.mutateAsync(position.id);
       toast({ title: 'Position deleted', variant: 'success' });
@@ -31,82 +37,96 @@ export function PositionsPage() {
     }
   };
 
-  const columns: DataTableColumn<Position>[] = [
-    {
-      key: 'title',
-      header: 'Position',
-      render: (p) => (
-        <div>
-          <p className="text-headline-sm font-headline-sm">{p.title}</p>
-          {p.description && <p className="text-label-sm font-label-sm text-secondary">{p.description}</p>}
-        </div>
-      ),
-    },
-    {
-      key: 'maxSelections',
-      header: 'Max Selections',
-      align: 'center',
-      render: (p) => p.maxSelections,
-    },
-    {
-      key: 'candidates',
-      header: 'Candidates',
-      align: 'center',
-      render: (p) => <Badge variant="outline">{p._count?.candidates ?? 0}</Badge>,
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      align: 'right',
-      render: (p) => (
-        <div className="flex justify-end gap-2">
-          <button
-            className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high hover:border-on-background transition-colors disabled:opacity-40 disabled:pointer-events-none"
-            aria-label={`Edit ${p.title}`}
-            disabled={isLocked}
-            onClick={() => setFormPosition(p)}
-          >
-            <Icon name="edit" size={18} />
-          </button>
-          <button
-            className="w-9 h-9 rounded-lg flex items-center justify-center border border-error text-error hover:bg-error hover:text-on-error transition-colors disabled:opacity-40 disabled:pointer-events-none"
-            aria-label={`Delete ${p.title}`}
-            disabled={isLocked}
-            onClick={() => handleDelete(p)}
-          >
-            <Icon name="delete" size={18} />
-          </button>
-        </div>
-      ),
-    },
-  ];
+  const totalCandidates = positions.reduce((s, p) => s + (p._count?.candidates ?? 0), 0);
 
   return (
     <>
       {election && <LockBanner election={election} />}
+      <PageHeader
+        kicker="Ballot"
+        title="Positions"
+        description="The contests on the ballot, in the order voters see them."
+        actions={
+          <Button leftIcon="add" disabled={isLocked} onClick={() => setFormPosition(null)}>
+            Add position
+          </Button>
+        }
+      />
 
-      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
-        <div>
-          <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Positions</h1>
-          <p className="text-body-lg text-secondary">Configure ballot positions, display order, and max selections.</p>
-        </div>
-        <Button variant="primary" leftIcon="add" disabled={isLocked} onClick={() => setFormPosition(null)}>
-          Add Position
-        </Button>
-      </section>
-
-      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-        <DataTable
-          columns={columns}
-          rows={data?.positions ?? []}
-          rowKey={(p) => p.id}
-          label="Positions"
-          emptyMessage="No positions yet. Add one to start building the ballot."
-          isLoading={isLoading}
-          error={isError ? error : undefined}
-          onRetry={() => refetch()}
-        />
-      </section>
+      {isError && !data ? (
+        <ErrorState message={error instanceof Error ? error.message : undefined} onRetry={() => refetch()} retrying={isFetching} />
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 sm:px-6 py-3.5 border-b border-on-background/80">
+            <p className="eyebrow !text-on-background">{positions.length} contests · {totalCandidates} candidates</p>
+            <Link to="/admin/candidates" className="text-[0.8125rem] font-medium text-primary hover:underline underline-offset-4">
+              Manage candidates
+            </Link>
+          </div>
+          {isLoading ? (
+            <div className="p-6 space-y-4">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-14" />
+              ))}
+            </div>
+          ) : positions.length === 0 ? (
+            <EmptyState
+              icon="list_alt"
+              title="No positions yet"
+              description="Add the first contest — for example President — to start building the ballot."
+              action={
+                <Button leftIcon="add" disabled={isLocked} onClick={() => setFormPosition(null)}>
+                  Add position
+                </Button>
+              }
+            />
+          ) : (
+            <ol className="ruled stagger">
+              {positions.map((p, i) => {
+                const n = p._count?.candidates ?? 0;
+                return (
+                  <li key={p.id} style={{ ['--i' as string]: i }} className="group grid grid-cols-[2.5rem_1fr_auto] sm:grid-cols-[3.5rem_1fr_8rem_8rem_auto] items-center gap-x-4 gap-y-1 px-5 sm:px-6 py-5 hover:bg-surface-bright transition-colors">
+                    <span className="font-serif text-[1.75rem] leading-none text-outline tabular">{String(i + 1).padStart(2, '0')}</span>
+                    <div className="min-w-0">
+                      <p className="font-serif text-[1.375rem] leading-tight">{p.title}</p>
+                      {p.description && <p className="mt-0.5 text-[0.875rem] text-secondary line-clamp-1">{p.description}</p>}
+                      <p className="sm:hidden mt-1 text-[0.8125rem] text-secondary">
+                        {p.maxSelections === 1 ? '1 seat' : `${p.maxSelections} seats`} · {n} candidate{n === 1 ? '' : 's'}
+                      </p>
+                    </div>
+                    <div className="hidden sm:block">
+                      <p className="eyebrow">Seats</p>
+                      <p className="mt-0.5 tabular">{p.maxSelections}</p>
+                    </div>
+                    <div className="hidden sm:block">
+                      <p className="eyebrow">Candidates</p>
+                      <p className={n === 0 ? 'mt-0.5 text-warning font-medium' : 'mt-0.5 tabular'}>{n === 0 ? 'None yet' : n}</p>
+                    </div>
+                    <div className="flex items-center gap-1 justify-end">
+                      <button
+                        type="button"
+                        aria-label={`Edit ${p.title}`}
+                        disabled={isLocked}
+                        onClick={() => setFormPosition(p)}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-secondary hover:text-on-background hover:bg-surface-container-low disabled:opacity-40"
+                      >
+                        <Icon name="edit" size={17} />
+                      </button>
+                      <ActionMenu
+                        label={`More actions for ${p.title}`}
+                        items={[
+                          { label: 'View candidates', icon: 'groups', onSelect: () => navigate(`/admin/candidates?position=${p.id}`) },
+                          { label: 'Delete position', icon: 'delete', tone: 'danger', disabled: isLocked, onSelect: () => handleDelete(p) },
+                        ]}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </Card>
+      )}
 
       <PositionFormModal
         open={formPosition !== undefined}

@@ -11,3 +11,4 @@ export * from './Modal';
 export * from './Toast';
 export * from './StateViews';
 export * from './Pagination';
+export * from './Confirm';
