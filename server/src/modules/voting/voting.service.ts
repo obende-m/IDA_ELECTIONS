@@ -3,6 +3,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { writeAuditLog } from '../../lib/audit';
 import { generateVoteReferenceNumber } from '../../lib/voteReference';
 import { getValidToken } from '../voters/voter.service';
+import { applyScheduledTransition } from '../../lib/election';
 import { recordVoteInTallies } from '../analytics/analytics.service';
 import type { CastVoteInput, VoteRecordsQuery } from './voting.validation';
 import type { Actor } from '../../lib/actor';
@@ -10,9 +11,19 @@ import type { Actor } from '../../lib/actor';
 export async function getBallot(rawToken: string, req?: import('express').Request) {
   const token = await getValidToken(rawToken, req);
 
-  const election = await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } });
+  // Voters never go through getCurrentElection(), so apply the scheduled open/close here too:
+  // otherwise voting could stay open past endTime (or not open at startTime) until an admin request.
+  const election = await applyScheduledTransition(
+    await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } })
+  );
   if (election.status !== 'ACTIVE') {
     throw new AppError('Voting is not currently open for this election.', 409);
+  }
+  if (election.isLocked) {
+    throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
+  }
+  if (!token.voter.isActive) {
+    throw new AppError('This voter account is not active. Please contact the Electoral Committee.', 403);
   }
 
   const positions = await prisma.position.findMany({
@@ -41,12 +52,17 @@ export async function getBallot(rawToken: string, req?: import('express').Reques
 export async function castVote(rawToken: string, input: CastVoteInput, req?: import('express').Request): Promise<{ referenceNumber: string }> {
   const token = await getValidToken(rawToken, req);
 
-  const election = await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } });
+  const election = await applyScheduledTransition(
+    await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } })
+  );
   if (election.status !== 'ACTIVE') {
     throw new AppError('Voting is not currently open for this election.', 409);
   }
   if (election.isLocked) {
     throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
+  }
+  if (!token.voter.isActive) {
+    throw new AppError('This voter account is not active. Please contact the Electoral Committee.', 403);
   }
 
   const positions = await prisma.position.findMany({
@@ -55,7 +71,15 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
   });
   const positionMap = new Map(positions.map((p) => [p.id, p]));
 
+  // The same position may appear only once: otherwise a voter could split a 1-seat position across
+  // two entries and exceed maxSelections.
+  const seenPositionIds = new Set<string>();
   for (const selection of input.selections) {
+    if (seenPositionIds.has(selection.positionId)) {
+      throw new AppError('Each position may only appear once in a ballot.', 400);
+    }
+    seenPositionIds.add(selection.positionId);
+
     const position = positionMap.get(selection.positionId);
     if (!position) throw new AppError('One of the selected positions is invalid.', 400);
 

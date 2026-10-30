@@ -72,7 +72,7 @@ export function VerifyPage() {
                 setBallot(ballot);
                 navigate(`/vote/select/${ballot.positions[0].id}`);
               } catch (err) {
-                if (err instanceof ApiError && err.status === 409) {
+                if (err instanceof ApiError && (err.status === 409 || err.status === 423)) {
                   clearSession();
                   navigate('/vote/closed', { state: { reason: err.message } });
                   return;

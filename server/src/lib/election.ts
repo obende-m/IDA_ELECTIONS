@@ -42,7 +42,7 @@ export async function getCurrentElection(): Promise<Election> {
  * Both transitions use a compare-and-swap update (mirrors castVote's token-claim pattern) so
  * concurrent requests can never double-transition or double-certify.
  */
-async function applyScheduledTransition(election: Election): Promise<Election> {
+export async function applyScheduledTransition(election: Election): Promise<Election> {
   const now = new Date();
 
   if (election.status === 'DRAFT' && !election.isLocked && election.startTime && election.startTime <= now) {
