@@ -1,10 +1,12 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { Button, Field, Icon } from '../../components/ui';
+import { Button, Field, FormError, Icon } from '../../components/ui';
+import { Brand } from '../../components/Brand';
 import { ApiError } from '../../lib/apiClient';
+import { useSlowHint } from '../../lib/useSlowHint';
 import { useAuth } from './AuthContext';
 
 const loginSchema = z.object({
@@ -14,22 +16,18 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-/**
- * Admin sign-in screen. No Stitch mock exists for this screen, so it is composed from the same
- * design tokens/components as the rest of the system (top-app-bar pattern, security-notice bar,
- * high-security form fields, gold primary action) to read as part of the same product.
- */
+/** Admin sign-in: split editorial layout on desktop (ink panel + form), single column on phones. */
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [serverError, setServerError] = useState<string | null>(null);
-
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
+  const slow = useSlowHint(isSubmitting, 8000);
 
   const onSubmit = async (values: LoginFormValues) => {
     setServerError(null);
@@ -43,72 +41,54 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-on-background">
-      <header className="w-full flex items-center justify-center h-16 bg-surface border-b border-outline-variant shadow-sm">
-        <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
-      </header>
+    <div className="min-h-[100dvh] grid lg:grid-cols-[1.05fr_1fr] bg-background">
+      <aside className="hidden lg:flex relative flex-col justify-between bg-on-background text-on-primary p-12 xl:p-16 overflow-hidden">
+        <div className="absolute inset-0 grain opacity-40 invert" aria-hidden="true" />
+        <Brand inverse subtitle="Electoral Committee" className="relative" />
+        <div className="relative">
+          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-primary-fixed-dim mb-6">Restricted access</p>
+          <p className="font-serif text-[3.25rem] xl:text-[3.75rem] leading-[1.02] tracking-[-0.02em] max-w-lg">
+            Run a fair election, <span className="italic text-primary-fixed-dim">on the record.</span>
+          </p>
+          <p className="mt-6 text-on-primary/65 max-w-md">Every sign-in and every administrative action in this portal is permanently written to the audit trail.</p>
+        </div>
+        <p className="relative font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-on-primary/45">Igarra Development Association</p>
+      </aside>
 
-      <main className="flex-1 flex items-center justify-center px-margin-mobile py-12">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center space-y-2">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-on-background flex items-center justify-center shadow-sm">
-              <Icon name="shield" filled size={28} className="text-primary-container" />
-            </div>
-            <p className="text-label-md font-label-md tracking-widest text-primary uppercase">Electoral Official Access</p>
-            <h1 className="text-headline-lg font-headline-lg uppercase">Admin Portal</h1>
-          </div>
+      <main className="flex flex-col">
+        <div className="lg:hidden px-6 h-16 flex items-center border-b border-outline-variant">
+          <Brand subtitle="Electoral Committee" />
+        </div>
+        <div className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="w-full max-w-sm animate-rise">
+            <p className="eyebrow mb-3">Admin portal</p>
+            <h1 className="font-serif text-headline-xl">Sign in</h1>
+            <p className="mt-2 text-body-md text-secondary">For authorised electoral officials only.</p>
 
-          <div className="bg-surface border border-outline-variant rounded-xl shadow-sm p-8 space-y-6">
-            <div className="bg-primary-container/10 p-4 rounded-lg border-l-4 border-primary">
-              <p className="text-label-sm font-label-sm text-primary uppercase mb-1">Security Notice</p>
-              <p className="text-body-md text-on-surface-variant leading-tight">
-                This portal is restricted to authorized electoral officials. All access attempts are logged.
-              </p>
-            </div>
-
-            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
-              <Field
-                label="Email Address"
-                icon="mail"
-                type="email"
-                autoComplete="username"
-                error={errors.email?.message}
-                {...register('email')}
-              />
-              <Field
-                label="Password"
-                icon="lock"
-                type="password"
-                autoComplete="current-password"
-                error={errors.password?.message}
-                {...register('password')}
-              />
-
-              {serverError && (
-                <p role="alert" className="text-label-md font-label-md text-error">
-                  {serverError}
+            <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
+              <Field label="Email address" icon="mail" type="email" autoComplete="username" error={errors.email?.message} {...register('email')} />
+              <Field label="Password" icon="lock" type="password" autoComplete="current-password" error={errors.password?.message} {...register('password')} />
+              <FormError message={serverError} />
+              {isSubmitting && slow && (
+                <p role="status" className="text-[0.8125rem] text-secondary">
+                  The server is waking up — this can take up to a minute…
                 </p>
               )}
-
-              <Button type="submit" variant="gold" size="lg" fullWidth uppercase loading={isSubmitting} rightIcon="arrow_forward">
-                Sign In
+              <Button type="submit" size="lg" fullWidth loading={isSubmitting} rightIcon="arrow_forward">
+                Sign in
               </Button>
             </form>
-          </div>
 
-          <div className="text-center">
-            <a className="text-label-md font-label-md text-primary hover:underline" href="#">
-              Forgot your password?
-            </a>
+            <p className="mt-8 pt-6 border-t border-outline-variant text-[0.8125rem] text-secondary flex gap-2">
+              <Icon name="info" size={15} className="mt-0.5 shrink-0" />
+              Forgot your password? Ask a Super Admin to reset it from Admin accounts.
+            </p>
+            <Link to="/vote" className="mt-4 inline-block text-[0.8125rem] font-medium text-primary hover:underline underline-offset-4">
+              Looking to vote? Go to the voter portal →
+            </Link>
           </div>
         </div>
       </main>
-
-      <footer className="py-6 text-center border-t border-outline-variant">
-        <p className="text-label-sm font-label-sm text-secondary opacity-60">
-          © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
-        </p>
-      </footer>
     </div>
   );
 }

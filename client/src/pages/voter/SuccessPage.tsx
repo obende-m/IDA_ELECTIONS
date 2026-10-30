@@ -1,84 +1,101 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Icon } from '../../components/ui';
+import { Button, Icon, useToast } from '../../components/ui';
+import { VoterShell } from '../../components/voter/VoterChrome';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
-
-const FOOTER_LINKS = ['Privacy Policy', 'Terms of Service', 'Election Integrity', 'Support'];
+import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 
 /**
- * Ported from vote_submitted_successfully_mobile/code.html. The confetti ornament in the
- * mock is dropped per DESIGN.md's "lack of unnecessary ornamentation" principle.
+ * Receipt. Only reachable after the server acknowledged the ballot (ReviewPage stores the reference it returned).
+ * "Print receipt" prints only the `.print-receipt` block (see index.css @media print).
  */
 export function SuccessPage() {
   const navigate = useNavigate();
-  const { referenceNumber, clearSession } = useVotingSession();
+  const { toast } = useToast();
+  const { referenceNumber, ballot, clearSession } = useVotingSession();
+  const [generatedAt] = useState(() => new Date());
+
+  if (!referenceNumber) return <VotingLinkRequiredNotice />;
+
+  const election = ballot?.election;
+  const electionLabel = election ? (election.title.includes(String(election.year)) ? election.title : `${election.title} ${election.year}`) : 'IDA Election';
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(referenceNumber);
+      toast({ title: 'Reference copied', variant: 'success', durationMs: 2500 });
+    } catch {
+      toast({ title: 'Could not copy', description: 'Select the reference and copy it manually.', variant: 'error' });
+    }
+  };
 
   return (
-    <>
-      <header className="w-full flex items-center justify-between px-margin-mobile h-16 bg-surface border-b border-outline-variant shadow-sm">
-        <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
-        <button className="bg-on-background text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg shadow-sm">
-          Secure Session
-        </button>
-      </header>
-
-      <main className="flex-grow flex flex-col items-center px-margin-mobile py-12 text-center">
-        <p className="text-label-md font-label-md tracking-widest text-primary uppercase mt-4">Igarra Development Association</p>
-        <h1 className="text-headline-lg font-headline-lg uppercase mt-1">Secure Electronic Voting</h1>
-
-        <div className="w-24 h-24 rounded-full bg-primary-container shadow-sm flex items-center justify-center my-8">
-          <Icon name="check" size={48} className="text-on-background" />
-        </div>
-
-        <h2 className="text-headline-lg font-headline-lg mb-3">Vote Recorded</h2>
-        <p className="text-body-lg text-secondary max-w-sm">
-          Your vote has been successfully recorded and encrypted in the IDA secure database.
+    <VoterShell step="done">
+      <div className="no-print animate-rise">
+        <svg viewBox="0 0 56 56" className="check-draw w-14 h-14 text-success" aria-hidden="true">
+          <circle cx="28" cy="28" r="27" fill="var(--color-success-soft)" />
+          <path d="M17 29l7 7 15-16" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <p className="eyebrow mt-8 mb-3">Ballot received</p>
+        <h1 className="font-serif text-display">Thank you. Your vote is recorded.</h1>
+        <p className="mt-4 text-body-lg text-secondary max-w-xl">
+          The voting server confirmed your ballot for {electionLabel}. Your link has now been closed and can't be used again.
         </p>
+      </div>
 
-        <div className="w-full max-w-sm rounded-xl border border-outline-variant shadow-sm bg-surface-container-low p-6 mt-8">
-          <p className="text-label-sm font-label-sm text-secondary uppercase tracking-widest mb-2">Voter Reference Number</p>
-          <p className="text-headline-lg font-headline-lg text-primary">{referenceNumber ?? '—'}</p>
-          <div className="flex items-center justify-center gap-2 mt-2 text-primary">
-            <Icon name="verified" filled size={16} />
-            <span className="text-label-sm font-label-sm">Transaction Verified</span>
+      <section aria-label="Voting receipt" className="print-receipt mt-10 rounded-2xl border border-outline-variant bg-surface-container-lowest overflow-hidden animate-rise" style={{ animationDelay: '120ms' }}>
+        <div className="hidden print:block p-6 pb-0">
+          <p className="eyebrow">Igarra Development Association</p>
+          <h2 className="font-serif text-[1.5rem]">Voter receipt — {electionLabel}</h2>
+        </div>
+        <div className="p-6 sm:p-8">
+          <p className="eyebrow">Your reference number</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <p className="font-mono text-[1.5rem] sm:text-[1.875rem] tracking-[0.04em] text-on-background break-all select-all">{referenceNumber}</p>
+            <button
+              type="button"
+              onClick={copy}
+              className="no-print h-9 px-3 rounded-lg border border-outline-variant text-[0.8125rem] font-medium inline-flex items-center gap-1.5 hover:border-outline"
+            >
+              <Icon name="content_copy" size={14} />
+              Copy
+            </button>
           </div>
+          <p className="mt-4 text-[0.875rem] text-secondary">
+            Keep this reference if you need to contact the Electoral Committee about your vote. It does not reveal your choices.
+          </p>
         </div>
+        <dl className="grid grid-cols-2 border-t border-outline-variant text-[0.875rem]">
+          <div className="p-5 sm:px-8">
+            <dt className="eyebrow">Recorded</dt>
+            <dd className="mt-1 tabular">{generatedAt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</dd>
+          </div>
+          <div className="p-5 sm:px-8 border-l border-outline-variant">
+            <dt className="eyebrow">Status</dt>
+            <dd className="mt-1 inline-flex items-center gap-1.5 text-success">
+              <Icon name="verified" size={15} /> Confirmed by server
+            </dd>
+          </div>
+        </dl>
+      </section>
 
-        <p className="text-body-md text-secondary max-w-sm mt-8">
-          Thank you for participating in the 2026 Election cycle. Your contribution ensures the civic stability of our
-          association.
-        </p>
-
-        <div className="w-full max-w-sm space-y-3 mt-10">
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            onClick={() => {
-              clearSession();
-              navigate('/vote');
-            }}
-          >
-            Logout
-          </Button>
-          <Button variant="secondary" size="lg" fullWidth leftIcon="print">
-            Print Receipt (PDF)
-          </Button>
-        </div>
-      </main>
-
-      <footer className="py-8 px-margin-mobile border-t border-outline-variant text-center">
-        <p className="text-label-md font-label-md font-bold text-on-surface mb-4">IDA Election Portal</p>
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
-          {FOOTER_LINKS.map((link) => (
-            <a key={link} className="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
-              {link}
-            </a>
-          ))}
-        </div>
-        <p className="text-label-sm font-label-sm text-secondary opacity-60">
-          © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
-        </p>
-      </footer>
-    </>
+      <div className="no-print mt-8 flex flex-col sm:flex-row gap-3">
+        <Button variant="secondary" size="lg" leftIcon="print" onClick={() => window.print()}>
+          Print or save receipt
+        </Button>
+        <Button
+          variant="ink"
+          size="lg"
+          className="sm:flex-1"
+          onClick={() => {
+            clearSession();
+            navigate('/vote', { replace: true });
+          }}
+        >
+          Finish and close session
+        </Button>
+      </div>
+      <p className="no-print mt-3 text-[0.8125rem] text-secondary">To save a PDF, choose “Save as PDF” in the print dialog.</p>
+    </VoterShell>
   );
 }

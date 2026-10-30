@@ -23,6 +23,18 @@ export async function updateCurrentElection(input: UpdateElectionInput, actor: A
   const election = await getCurrentElection();
   await assertElectionNotLocked(election.id);
 
+  if (election.status === 'CLOSED' || election.status === 'ARCHIVED') {
+    throw new AppError('A closed election can no longer be edited.', 409);
+  }
+  const nextStart = input.startTime !== undefined ? input.startTime : election.startTime;
+  const nextEnd = input.endTime !== undefined ? input.endTime : election.endTime;
+  if (nextStart && nextEnd && nextEnd <= nextStart) {
+    throw new AppError('The end time must be after the start time.', 400);
+  }
+  if (input.endTime && election.status === 'ACTIVE' && input.endTime <= new Date()) {
+    throw new AppError('The end time must be in the future for an election that is already open. Use "Close Election" to end it now.', 400);
+  }
+
   const updated = await prisma.election.update({
     where: { id: election.id },
     data: {
@@ -165,8 +177,8 @@ export async function archiveElection(actor: Actor, req?: import('express').Requ
  */
 export async function closeElection(actor: Actor, req?: import('express').Request) {
   const election = await getCurrentElection();
-  if (election.status === 'CLOSED') {
-    throw new AppError('This election is already closed.', 409);
+  if (election.status !== 'ACTIVE' && election.status !== 'PAUSED') {
+    throw new AppError('Only an open or paused election can be closed.', 409);
   }
 
   const updated = await prisma.$transaction(
@@ -180,7 +192,7 @@ export async function closeElection(actor: Actor, req?: import('express').Reques
     },
     // Default 5s interactive-transaction timeout is too tight for certifyElectionResults' read
     // fan-out (positions/candidates/activity/audit log) over the network to Supabase's pooler.
-    { timeout: 15000 }
+    { maxWait: 20000, timeout: 15000 }
   );
 
   await writeAuditLog({

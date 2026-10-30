@@ -1,135 +1,278 @@
-import { NavLink, Outlet, ScrollRestoration, useNavigate } from 'react-router-dom';
-import { Icon } from '../components/ui';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ElectionStatusBadge, Icon } from '../components/ui';
+import { Brand } from '../components/Brand';
 import { cn } from '../lib/cn';
 import { useAuth } from '../features/auth/AuthContext';
+import { queryClient } from '../lib/queryClient';
+import { useCurrentElection } from '../features/elections/useElection';
 import { BackToTopButton } from '../components/BackToTopButton';
 import type { UserRole } from '../features/auth/types';
 
-const ELECTION_COMMITTEE_ROLES: UserRole[] = ['SUPER_ADMIN', 'ELECTION_COMMITTEE'];
-const SUPER_ADMIN_ROLES: UserRole[] = ['SUPER_ADMIN'];
+const COMMITTEE: UserRole[] = ['SUPER_ADMIN', 'ELECTION_COMMITTEE'];
+const SUPER: UserRole[] = ['SUPER_ADMIN'];
 
-const NAV_ITEMS: { to: string; label: string; icon: string; roles?: UserRole[] }[] = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { to: '/admin/candidates', label: 'Candidates', icon: 'groups' },
-  { to: '/admin/positions', label: 'Positions', icon: 'list_alt' },
-  { to: '/admin/voters', label: 'Voters', icon: 'person_search' },
-  { to: '/admin/results', label: 'Live Results', icon: 'analytics' },
-  // Individual vote records are sensitive: restricted to Election Committee / Super Admin, both
-  // client-side (hidden from the nav for anyone else) and server-side (the real security boundary).
-  { to: '/admin/vote-records', label: 'Vote Records', icon: 'visibility', roles: ELECTION_COMMITTEE_ROLES },
-  { to: '/admin/reports', label: 'Reports', icon: 'description' },
-  { to: '/admin/audit', label: 'Audit Logs', icon: 'security' },
-  // Managing who else has administrative access is Super Admin-exclusive — same boundary as
-  // unlocking a locked election, enforced server-side in user.routes.ts.
-  { to: '/admin/users', label: 'Admin Accounts', icon: 'manage_accounts', roles: SUPER_ADMIN_ROLES },
-  { to: '/admin/settings', label: 'Settings', icon: 'settings' },
+interface NavItem {
+  to: string;
+  label: string;
+  icon: string;
+  roles?: UserRole[];
+}
+
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: 'Election',
+    items: [
+      { to: '/admin/dashboard', label: 'Overview', icon: 'dashboard' },
+      { to: '/admin/results', label: 'Results', icon: 'analytics' },
+      // Individual vote records are restricted to Committee/Super Admin; the server is the real boundary.
+      { to: '/admin/vote-records', label: 'Vote records', icon: 'visibility', roles: COMMITTEE },
+    ],
+  },
+  {
+    title: 'Ballot',
+    items: [
+      { to: '/admin/positions', label: 'Positions', icon: 'list_alt' },
+      { to: '/admin/candidates', label: 'Candidates', icon: 'groups' },
+    ],
+  },
+  { title: 'Electorate', items: [{ to: '/admin/voters', label: 'Voters', icon: 'person_search' }] },
+  {
+    title: 'Oversight',
+    items: [
+      { to: '/admin/reports', label: 'Reports', icon: 'description' },
+      { to: '/admin/audit', label: 'Audit trail', icon: 'security' },
+    ],
+  },
+  {
+    title: 'Administration',
+    items: [
+      { to: '/admin/users', label: 'Admin accounts', icon: 'manage_accounts', roles: SUPER },
+      { to: '/admin/settings', label: 'Election settings', icon: 'settings' },
+    ],
+  },
 ];
 
-/** Fixed sidebar + top app bar shell for every /admin/* route (ported from admin_dashboard_ida_election_portal code.html). */
-export function AdminLayout() {
+const ROLE_LABEL: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  ELECTION_COMMITTEE: 'Election Committee',
+  ADMIN: 'Administrator',
+};
+
+function initials(name?: string) {
+  return (name ?? '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join('');
+}
+
+function formatWindow(start?: string | null, end?: string | null) {
+  const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  if (start && end) return `${fmt(start)} → ${fmt(end)}`;
+  if (end) return `Closes ${fmt(end)}`;
+  if (start) return `Opens ${fmt(start)}`;
+  return 'No schedule set';
+}
+
+function AdminShell() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const navItems = NAV_ITEMS.filter((item) => !item.roles || (user && item.roles.includes(user.role)));
+  const location = useLocation();
+  const { data: electionData } = useCurrentElection();
+  const election = electionData?.election;
+  const [navOpen, setNavOpen] = useState(false);
+
+  useEffect(() => setNavOpen(false), [location.pathname]);
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setNavOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [navOpen]);
 
   const handleLogout = async () => {
     await logout();
     navigate('/admin/login', { replace: true });
   };
 
+  const groups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => !i.roles || (user && i.roles.includes(user.role))) })).filter(
+    (g) => g.items.length > 0
+  );
+  const current = NAV_GROUPS.flatMap((g) => g.items).find((i) => location.pathname.startsWith(i.to));
+
   return (
-    <div className="min-h-screen bg-background text-on-background">
-      <aside className="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container border-r border-outline-variant flex flex-col pt-8 z-40">
-        <div className="px-6 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-on-background flex items-center justify-center shadow-sm">
-              <Icon name="shield" filled className="text-primary-container" />
-            </div>
-            <div>
-              <p className="text-headline-sm font-headline-sm font-bold text-primary">Admin Portal</p>
-              <p className="text-label-sm font-label-sm text-secondary uppercase tracking-widest">Election 2026</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-background text-on-background overflow-x-clip">
+      <a
+        href="#admin-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:bg-on-background focus:text-on-primary focus:px-4 focus:py-2 focus:rounded-lg"
+      >
+        Skip to main content
+      </a>
+
+      {/* Mobile scrim */}
+      <div
+        className={cn('lg:hidden fixed inset-0 z-40 bg-[#15181a]/40 transition-opacity duration-200', navOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}
+        onClick={() => setNavOpen(false)}
+        aria-hidden="true"
+      />
+
+      <aside
+        id="admin-sidebar"
+        aria-label="Admin navigation"
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-[17rem] bg-surface-bright border-r border-outline-variant flex flex-col',
+          'transition-transform duration-300 ease-[var(--ease-out-quart)] lg:translate-x-0',
+          navOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full max-lg:invisible'
+        )}
+      >
+        <div className="h-[4.5rem] px-5 flex items-center justify-between border-b border-outline-variant">
+          <Link to="/admin/dashboard" className="rounded-lg">
+            <Brand subtitle="Admin" />
+          </Link>
+          <button
+            type="button"
+            className="lg:hidden w-10 h-10 rounded-lg flex items-center justify-center hover:bg-surface-container-low"
+            aria-label="Close navigation"
+            onClick={() => setNavOpen(false)}
+          >
+            <Icon name="close" />
+          </button>
         </div>
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all',
-                  isActive
-                    ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
-                    : 'text-secondary hover:bg-surface-container-high'
-                )
-              }
-            >
-              <Icon name={item.icon} />
-              <span className="text-label-md font-label-md">{item.label}</span>
-            </NavLink>
+
+        {election && (
+          <Link
+            to="/admin/settings"
+            className="mx-4 mt-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-3.5 hover:border-outline transition-colors"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="eyebrow">{election.year}</span>
+              <ElectionStatusBadge status={election.status} locked={election.isLocked} />
+            </div>
+            <p className="mt-2 font-serif text-[1.05rem] leading-snug line-clamp-2">{election.title}</p>
+            <p className="mt-1 text-[0.75rem] text-secondary tabular">{formatWindow(election.startTime, election.endTime)}</p>
+          </Link>
+        )}
+
+        <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 py-4 space-y-5">
+          {groups.map((group) => (
+            <div key={group.title}>
+              <p className="px-3 mb-1.5 eyebrow !text-[0.625rem] !text-outline">{group.title}</p>
+              <ul className="space-y-0.5">
+                {group.items.map((item) => (
+                  <li key={item.to}>
+                    <NavLink
+                      to={item.to}
+                      className={({ isActive }) =>
+                        cn(
+                          'group relative flex items-center gap-3 h-10 px-3 rounded-lg text-[0.875rem] transition-colors',
+                          isActive ? 'bg-on-background text-on-primary font-medium' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-background'
+                        )
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon name={item.icon} size={18} className={isActive ? 'text-primary-fixed-dim' : 'text-secondary group-hover:text-on-background'} />
+                          {item.label}
+                        </>
+                      )}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
         </nav>
-        <div className="p-6 border-t border-outline-variant">
-          <NavLink
-            to="/vote"
-            className="block w-full text-center bg-primary-container text-on-primary-container font-bold py-3 rounded-lg uppercase tracking-tighter shadow-sm hover:shadow-md hover:brightness-95 transition-all"
-          >
-            Cast Vote
-          </NavLink>
+
+        <div className="p-3 border-t border-outline-variant">
+          <div className="flex items-center gap-3 px-2 py-2">
+            <span className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center text-[0.8125rem] font-semibold shrink-0">
+              {initials(user?.fullName)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.875rem] font-medium truncate">{user?.fullName}</p>
+              <p className="text-[0.75rem] text-secondary truncate">{user ? ROLE_LABEL[user.role] ?? user.role : ''}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sign out"
+              title="Sign out"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-secondary hover:text-error hover:bg-error-container/50 transition-colors"
+            >
+              <Icon name="logout" size={18} />
+            </button>
+          </div>
         </div>
       </aside>
 
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface border-b border-outline-variant shadow-sm">
-        <div className="flex items-center gap-4">
-          <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
-          <div className="hidden md:flex items-center gap-2 bg-on-background px-3 py-1 rounded-full text-primary-container">
-            <Icon name="verified" filled size={14} />
-            <span className="text-label-md font-label-md uppercase tracking-wider">Secure Protocol v.4.0</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 border-r border-outline-variant pr-4">
-            <Icon name="account_circle" className="text-secondary" />
-            <div className="text-right leading-tight">
-              <p className="text-label-md font-label-md font-bold">{user?.fullName}</p>
-              <p className="text-label-sm font-label-sm text-secondary uppercase tracking-wide">{user?.role}</p>
+      <div className="lg:pl-[17rem] min-h-screen flex flex-col">
+        <header className="sticky top-0 z-30 h-[4.5rem] bg-background/85 backdrop-blur-md border-b border-outline-variant">
+          <div className="h-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                className="lg:hidden shrink-0 w-10 h-10 -ml-1 rounded-lg flex items-center justify-center hover:bg-surface-container-low"
+                aria-label="Open navigation"
+                aria-expanded={navOpen}
+                aria-controls="admin-sidebar"
+                onClick={() => setNavOpen(true)}
+              >
+                <Icon name="menu" />
+              </button>
+              <nav aria-label="Breadcrumb" className="min-w-0">
+                <ol className="flex items-center gap-2 text-[0.875rem]">
+                  <li className="hidden sm:block text-secondary">Admin</li>
+                  <li className="hidden sm:block text-outline" aria-hidden="true">
+                    /
+                  </li>
+                  <li className="font-medium truncate" aria-current="page">
+                    {current?.label ?? 'Admin'}
+                  </li>
+                </ol>
+              </nav>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="hidden md:inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-outline-variant text-[0.75rem] text-secondary">
+                <Icon name="lock" size={13} />
+                Secure session
+              </span>
+              <Link
+                to="/vote"
+                target="_blank"
+                rel="noopener"
+                className="hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[0.8125rem] font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-background"
+              >
+                Voter portal
+                <Icon name="arrow_forward" size={14} />
+              </Link>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-on-background text-on-primary font-label-md text-label-md px-6 py-2 rounded-lg shadow-sm hover:shadow-md hover:brightness-110 transition-all"
-          >
-            <Icon name="logout" size={16} />
-            Log Out
-          </button>
-        </div>
-      </header>
+        </header>
 
-      <main className="ml-64 mt-16 flex-1 px-margin-desktop py-12 flex flex-col gap-8 pb-24">
-        <Outlet />
-      </main>
+        <main id="admin-main" tabIndex={-1} className="flex-1 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-10 py-8 lg:py-10 flex flex-col gap-8 focus:outline-none">
+          <Outlet />
+        </main>
+
+        <footer className="border-t border-outline-variant">
+          <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-10 py-5 flex flex-col sm:flex-row justify-between gap-2 text-[0.75rem] text-secondary">
+            <p>© {new Date().getFullYear()} Igarra Development Association. Electoral Committee portal.</p>
+            <p className="font-mono uppercase tracking-[0.1em]">All administrative actions are audit-logged</p>
+          </div>
+        </footer>
+      </div>
       <ScrollRestoration />
       <BackToTopButton />
-
-      <footer className="ml-64 bg-surface-container-lowest border-t border-outline-variant py-4 px-margin-desktop">
-        <div className="flex flex-col md:flex-row flex-wrap justify-between items-center gap-x-6 gap-y-3">
-          <p className="text-label-sm font-label-sm text-secondary text-center md:text-left">
-            © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
-            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
-              Election Integrity
-            </a>
-            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
-              Support
-            </a>
-            <div className="flex items-center gap-1 text-primary">
-              <Icon name="lock_person" size={14} />
-              <span className="text-label-sm font-label-sm uppercase font-bold tracking-tighter">E2E Encrypted</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
+  );
+}
+
+export function AdminLayout() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AdminShell />
+    </QueryClientProvider>
   );
 }

@@ -22,17 +22,8 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-const VARIANT_ICON: Record<ToastVariant, string> = {
-  default: 'info',
-  success: 'check_circle',
-  error: 'error',
-};
-
-const VARIANT_CLASSES: Record<ToastVariant, string> = {
-  default: 'border-outline-variant text-on-background',
-  success: 'border-primary-container text-on-background',
-  error: 'border-error text-error',
-};
+const VARIANT_ICON: Record<ToastVariant, string> = { default: 'info', success: 'check_circle', error: 'error' };
+const VARIANT_ACCENT: Record<ToastVariant, string> = { default: 'text-on-surface-variant', success: 'text-success', error: 'text-error' };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
@@ -45,8 +36,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const toast = useCallback(
     (options: ToastOptions) => {
       const id = nextId.current++;
-      setItems((prev) => [...prev, { id, variant: 'default', durationMs: 5000, ...options }]);
-      window.setTimeout(() => dismiss(id), options.durationMs ?? 5000);
+      setItems((prev) => [...prev.slice(-3), { id, variant: 'default', durationMs: 5000, ...options }]);
+      window.setTimeout(() => dismiss(id), options.durationMs ?? (options.variant === 'error' ? 8000 : 5000));
     },
     [dismiss]
   );
@@ -55,20 +46,27 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       {createPortal(
-        <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-3 w-full max-w-sm">
+        <div aria-live="polite" className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-[200] flex flex-col gap-2.5 sm:w-[24rem]">
           {items.map((item) => (
             <div
               key={item.id}
-              role="status"
-              className={cn('bg-surface border rounded-lg px-4 py-3 flex items-start gap-3 shadow-lg', VARIANT_CLASSES[item.variant ?? 'default'])}
+              role={item.variant === 'error' ? 'alert' : 'status'}
+              className="animate-rise bg-on-background text-on-primary rounded-xl pl-4 pr-2 py-3 flex items-start gap-3 shadow-lg"
             >
-              <Icon name={VARIANT_ICON[item.variant ?? 'default']} filled />
-              <div className="flex-1">
-                <p className="text-label-md font-label-md font-bold uppercase">{item.title}</p>
-                {item.description && <p className="text-body-md text-secondary mt-1">{item.description}</p>}
+              <span className={cn('mt-0.5 w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0', VARIANT_ACCENT[item.variant ?? 'default'])}>
+                <Icon name={VARIANT_ICON[item.variant ?? 'default']} size={15} strokeWidth={2.25} />
+              </span>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <p className="text-[0.875rem] font-semibold">{item.title}</p>
+                {item.description && <p className="text-[0.8125rem] text-on-primary/70 mt-0.5 break-words">{item.description}</p>}
               </div>
-              <button onClick={() => dismiss(item.id)} aria-label="Dismiss notification" className="text-secondary hover:text-on-background">
-                <Icon name="close" size={18} />
+              <button
+                type="button"
+                onClick={() => dismiss(item.id)}
+                aria-label="Dismiss notification"
+                className="focus-ring-light shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-on-primary/60 hover:text-on-primary hover:bg-white/10"
+              >
+                <Icon name="close" size={16} />
               </button>
             </div>
           ))}

@@ -1,64 +1,83 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Icon } from '../../components/ui';
-import { ApiError } from '../../lib/apiClient';
+import { Button, Spinner } from '../../components/ui';
+import { StatusScreen, VoterShell } from '../../components/voter/VoterChrome';
+import { ApiError, NETWORK_ERROR_MESSAGE } from '../../lib/apiClient';
+import { useSlowHint } from '../../lib/useSlowHint';
 import { votingApi } from '../../features/voting/votingApi';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
 
+interface LinkError {
+  message: string;
+  retryable: boolean;
+}
+
 /**
- * Entry point for a voter's personal https://domain/vote/{token} link. Resolves the token against
- * the backend (marking it accessed and audit-logging the attempt either way), then hands off to
- * the identity-confirmation step — or shows why the link can't be used.
+ * Entry point for a voter's personal /vote/{token} link: resolves the token (server marks first access and
+ * audit-logs the attempt), then hands off to identity confirmation, or explains why the link can't be used.
+ * The backend can take up to a minute to wake, so a hint appears after 8 s and failures offer Retry.
  */
 export function TokenEntryPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { setSession } = useVotingSession();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LinkError | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const slow = useSlowHint(!error, 8000);
 
   useEffect(() => {
     if (!token) {
-      setError('This voting link is incomplete.');
+      setError({ message: 'This voting link is incomplete.', retryable: false });
       return;
     }
-
+    let cancelled = false;
+    setError(null);
     votingApi
       .resolveToken(token)
       .then((resolved) => {
+        if (cancelled) return;
         setSession({ token, ...resolved });
         navigate('/vote/verify', { replace: true });
       })
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : 'Unable to reach the server. Please try again.');
+        if (cancelled) return;
+        setError(err instanceof ApiError ? { message: err.message, retryable: err.retryable } : { message: NETWORK_ERROR_MESSAGE, retryable: true });
       });
-  }, [token, setSession, navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [token, attempt, setSession, navigate]);
+
+  if (error) {
+    return (
+      <StatusScreen
+        icon={error.retryable ? 'wifi_off' : 'link_off'}
+        tone="error"
+        kicker={error.retryable ? 'Connection problem' : 'Link unavailable'}
+        title={error.retryable ? "We couldn't reach the voting server" : 'This voting link cannot be used'}
+        action={
+          error.retryable ? (
+            <Button size="lg" leftIcon="refresh" onClick={() => setAttempt((n) => n + 1)}>
+              Try again
+            </Button>
+          ) : undefined
+        }
+        aside={{ title: 'Need help?', body: 'If you believe this is a mistake, contact the IDA Electoral Committee. They can check your link or issue a new one.' }}
+      >
+        {error.message}
+      </StatusScreen>
+    );
+  }
 
   return (
-    <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center min-h-screen">
-      {error ? (
-        <>
-          <div className="w-20 h-20 rounded-full bg-on-background flex items-center justify-center mb-6">
-            <Icon name="link_off" filled size={36} className="text-error" />
-          </div>
-          <h1 className="text-headline-lg font-headline-lg uppercase mb-3">Link Unavailable</h1>
-          <p className="text-body-lg text-secondary max-w-sm">{error}</p>
-          <p className="text-body-md text-secondary max-w-sm mt-6">
-            If you believe this is an error, please contact the Electoral Committee for assistance.
-          </p>
-        </>
-      ) : (
-        <>
-          <svg className="h-10 w-10 animate-spin text-primary mb-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <p className="text-label-md font-label-md uppercase tracking-widest text-secondary">Verifying your voting link…</p>
-        </>
-      )}
-    </main>
+    <VoterShell step="verify">
+      <div role="status" aria-live="polite" className="min-h-[50vh] flex flex-col items-center justify-center text-center animate-fade">
+        <Spinner className="h-8 w-8" />
+        <p className="mt-5 font-serif text-[1.5rem]">Checking your voting link…</p>
+        <p className={slow ? 'mt-3 max-w-sm text-body-md text-secondary animate-fade' : 'sr-only'}>
+          {slow ? 'The server is waking up — this can take up to a minute. Please keep this page open.' : ''}
+        </p>
+      </div>
+    </VoterShell>
   );
 }

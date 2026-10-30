@@ -1,5 +1,11 @@
 import { prisma } from '../../lib/prisma';
 import { hashPassword, verifyPassword } from '../../lib/password';
+
+let dummyHashPromise: Promise<string> | null = null;
+function dummyHash(): Promise<string> {
+  dummyHashPromise ??= hashPassword('not-a-real-password-for-timing-equalisation');
+  return dummyHashPromise;
+}
 import { signAccessToken } from '../../lib/jwt';
 import { generateOpaqueToken, hashToken } from '../../lib/tokens';
 import { AppError } from '../../middleware/errorHandler';
@@ -28,6 +34,8 @@ async function createSession(userId: string): Promise<{ refreshToken: string; ex
 export async function login(email: string, password: string): Promise<SessionResult> {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.isActive || user.role === 'VOTER') {
+    // Still burn an argon2 verification so response time doesn't reveal whether the account exists.
+    await verifyPassword(await dummyHash(), password).catch(() => false);
     throw new AppError('Invalid email or password', 401);
   }
 

@@ -14,6 +14,7 @@ import resultsRoutes from './modules/results/results.routes';
 import reportRoutes from './modules/reports/report.routes';
 import auditRoutes from './modules/audit/audit.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { prisma } from './lib/prisma';
 
 dotenv.config();
 
@@ -29,12 +30,28 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
+
+// Never let a browser/proxy cache API responses: ballots, results and exports are per-request data.
+app.use('/api', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 app.use(cookieParser());
 
 // API health endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'HEALTHY', timestamp: new Date().toISOString() });
+});
+
+// Readiness: also proves the database connection works (use for external uptime monitoring, not Render's health check).
+app.get('/api/health/ready', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'READY', timestamp: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ status: 'DATABASE_UNAVAILABLE', timestamp: new Date().toISOString() });
+  }
 });
 
 // Register Module Routes
@@ -57,5 +74,9 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`[Server]: Security protocol listening on port ${port}`);
   });
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[UnhandledRejection]', reason);
+});
 
 export default app;

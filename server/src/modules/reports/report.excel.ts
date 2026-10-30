@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import type { ElectionSummaryReport, PositionResultsReport, ParticipationReport, AuditReport } from './report.service';
+import { linkStatRows, type ElectionSummaryReport, type PositionResultsReport, type ParticipationReport, type AuditReport } from './report.service';
 
 const HEADER_FILL: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1C1B1B' } };
 const HEADER_FONT: Partial<ExcelJS.Font> = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -49,6 +49,7 @@ export async function renderElectionSummaryExcel(report: ElectionSummaryReport):
     ['Ballots Cast', report.analytics.ballotsCast],
     ['Abstained Voters', report.analytics.abstainedVoters],
     ['Turnout %', report.analytics.turnoutPct],
+    ...linkStatRows(report.analytics.links),
     ['Certification', report.certificationLabel ?? 'Not yet certified'],
   ]);
   for (const position of report.analytics.positions) addPositionSheet(workbook, position);
@@ -69,6 +70,7 @@ export async function renderParticipationExcel(report: ParticipationReport): Pro
     ['Ballots Cast', report.ballotsCast],
     ['Abstained Voters', report.abstainedVoters],
     ['Turnout %', report.turnoutPct],
+    ...linkStatRows(report.links),
   ]);
   const sheet = workbook.addWorksheet('Hourly Timeline');
   sheet.columns = [

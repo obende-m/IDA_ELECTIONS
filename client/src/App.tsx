@@ -1,27 +1,22 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './features/auth/AuthContext';
 import { VotingSessionProvider } from './features/voting/VotingSessionContext';
-import { ToastProvider } from './components/ui';
+import { ConfirmProvider, ToastProvider } from './components/ui';
 import { router } from './router';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false },
-  },
-});
-
+// Note: the react-query provider lives in AdminLayout (the only place that uses it), which keeps
+// react-query out of the voter bundle.
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <VotingSessionProvider>
-          <ToastProvider>
-            <RouterProvider router={router} />
-          </ToastProvider>
-        </VotingSessionProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <VotingSessionProvider>
+        <ToastProvider>
+          <ConfirmProvider>
+          <RouterProvider router={router} />
+          </ConfirmProvider>
+        </ToastProvider>
+      </VotingSessionProvider>
+    </AuthProvider>
   );
 }
 

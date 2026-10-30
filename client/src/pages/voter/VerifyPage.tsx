@@ -1,114 +1,133 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Icon, useToast } from '../../components/ui';
-import { MobileTopBar } from '../../components/voter/MobileTopBar';
+import { VoterShell } from '../../components/voter/VoterChrome';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
 import { votingApi } from '../../features/voting/votingApi';
 import { ApiError } from '../../lib/apiClient';
+import { useSlowHint } from '../../lib/useSlowHint';
 import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 
-/**
- * Identity confirmation for a voter who arrived via their personal /vote/:token link (see
- * TokenEntryPage). The link itself is the credential — this screen just gives the voter a
- * moment to confirm it's really them before proceeding, rather than asking them to type anything.
- */
+/** Identity confirmation: the link is the credential; this gives the voter a moment to confirm it's really them. */
 export function VerifyPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { session, setBallot, clearSession } = useVotingSession();
   const [loading, setLoading] = useState(false);
+  const [notMe, setNotMe] = useState(false);
+  const slow = useSlowHint(loading, 8000);
 
-  if (!session) {
-    return <VotingLinkRequiredNotice />;
+  if (!session) return <VotingLinkRequiredNotice />;
+
+  const continueToBallot = async () => {
+    setLoading(true);
+    try {
+      const fetched = await votingApi.getBallot(session.token);
+      if (fetched.positions.length === 0) {
+        toast({ title: 'Ballot not ready', description: 'The Electoral Committee has not published any positions yet.', variant: 'error' });
+        return;
+      }
+      setBallot(fetched);
+      navigate(`/vote/select/${fetched.positions[0].id}`);
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 409 || err.status === 423)) {
+        clearSession();
+        navigate('/vote/closed', { state: { reason: err.message } });
+        return;
+      }
+      toast({
+        title: err instanceof ApiError && err.status === 0 ? 'Connection problem' : 'Could not load your ballot',
+        description: err instanceof ApiError ? err.message : 'Please try again in a moment.',
+        variant: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (notMe) {
+    return (
+      <VoterShell>
+        <div className="animate-rise">
+          <span className="w-14 h-14 rounded-2xl bg-error-container text-error flex items-center justify-center mb-8">
+            <Icon name="report" size={26} />
+          </span>
+          <h1 className="font-serif text-headline-xl">Don't use this link</h1>
+          <p className="mt-4 text-body-lg text-secondary max-w-xl">
+            This link belongs to someone else. Please close this page and let the IDA Electoral Committee know, so they can protect that member's vote and send you your own link.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button
+              variant="ink"
+              onClick={() => {
+                clearSession();
+                navigate('/vote', { replace: true });
+              }}
+            >
+              Leave this ballot
+            </Button>
+            <Button variant="ghost" onClick={() => setNotMe(false)}>
+              Go back
+            </Button>
+          </div>
+        </div>
+      </VoterShell>
+    );
   }
 
   return (
-    <>
-      <MobileTopBar title="Identity Verification" centerTitle showBack={false} rightSlot={<span />} />
+    <VoterShell step="verify">
+      <div className="animate-rise">
+        <p className="eyebrow mb-3">Step 1 · Confirm identity</p>
+        <h1 className="font-serif text-headline-xl">Is this you?</h1>
+        <p className="mt-3 text-body-lg text-secondary">This private voting link was issued to the member below.</p>
 
-      <main className="flex-grow pt-24 pb-12 px-margin-mobile flex flex-col items-center">
-        <div className="mb-10 text-center">
-          <div className="inline-flex w-24 h-24 items-center justify-center p-4 rounded-2xl bg-on-background shadow-sm mb-6">
-            <Icon name="shield" filled size={40} className="text-primary-container" />
+        <div className="mt-8 rounded-2xl border border-outline-variant bg-surface-container-lowest overflow-hidden">
+          <div className="p-6 sm:p-8 flex items-center gap-5">
+            <span
+              className="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center font-serif text-[1.5rem] shrink-0"
+              aria-hidden="true"
+            >
+              {session.fullName
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((p) => p[0])
+                .join('')
+                .toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="eyebrow">Member</p>
+              <p className="font-serif text-[1.75rem] leading-tight break-words">{session.fullName}</p>
+            </div>
           </div>
-          <h1 className="text-headline-lg-mobile font-headline-lg-mobile text-on-surface mb-2">IDA ELECTION PORTAL</h1>
-          <p className="text-body-md text-on-surface-variant">2026 General Assembly Voting</p>
+          <dl className="grid grid-cols-2 border-t border-outline-variant">
+            <div className="p-5 sm:px-8">
+              <dt className="eyebrow">Membership no.</dt>
+              <dd className="mt-1 font-mono text-[0.9375rem] break-all">{session.membershipNumber}</dd>
+            </div>
+            <div className="p-5 sm:px-8 border-l border-outline-variant">
+              <dt className="eyebrow">Link status</dt>
+              <dd className="mt-1 inline-flex items-center gap-1.5 text-[0.9375rem] text-success">
+                <Icon name="check_circle" size={16} /> Valid, unused
+              </dd>
+            </div>
+          </dl>
         </div>
 
-        <div className="w-full max-w-sm space-y-8">
-          <div className="bg-primary-container/10 p-4 rounded-r-lg border-l-4 border-primary">
-            <p className="text-label-sm font-label-sm text-primary uppercase mb-1">Confirm Your Identity</p>
-            <p className="text-body-md text-on-surface-variant leading-tight">
-              This voting link was issued to the member below. Please confirm this is you before continuing.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-outline-variant shadow-sm p-6 space-y-4">
-            <div>
-              <p className="text-label-sm font-label-sm text-secondary uppercase">Full Name</p>
-              <p className="text-headline-sm font-headline-sm">{session.fullName}</p>
-            </div>
-            <div className="border-t border-outline-variant pt-4">
-              <p className="text-label-sm font-label-sm text-secondary uppercase">Membership Number</p>
-              <p className="text-headline-sm font-headline-sm">{session.membershipNumber}</p>
-            </div>
-          </div>
-
-          <Button
-            variant="gold"
-            size="lg"
-            fullWidth
-            uppercase
-            rightIcon="verified_user"
-            loading={loading}
-            onClick={async () => {
-              setLoading(true);
-              try {
-                const ballot = await votingApi.getBallot(session.token);
-                if (ballot.positions.length === 0) {
-                  toast({ title: 'Ballot not ready', description: 'The electoral committee has not published any positions yet.', variant: 'error' });
-                  return;
-                }
-                setBallot(ballot);
-                navigate(`/vote/select/${ballot.positions[0].id}`);
-              } catch (err) {
-                if (err instanceof ApiError && err.status === 409) {
-                  clearSession();
-                  navigate('/vote/closed', { state: { reason: err.message } });
-                  return;
-                }
-                toast({
-                  title: 'Could not load your ballot',
-                  description: err instanceof ApiError ? err.message : 'Please try again in a moment.',
-                  variant: 'error',
-                });
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            Yes, This Is Me — Continue
+        <div className="mt-8 space-y-3">
+          <Button size="lg" fullWidth rightIcon="arrow_forward" loading={loading} onClick={continueToBallot}>
+            Yes, this is me — open my ballot
           </Button>
-
-          <button
-            type="button"
-            onClick={clearSession}
-            className="w-full text-center text-label-md font-label-md text-secondary hover:text-error transition-colors"
-          >
-            This isn't me
-          </button>
+          {loading && slow && (
+            <p role="status" className="text-center text-[0.875rem] text-secondary animate-fade">
+              The server is waking up — this can take up to a minute. Please keep this page open.
+            </p>
+          )}
+          <Button variant="ghost" size="lg" fullWidth disabled={loading} onClick={() => setNotMe(true)}>
+            No, this isn't me
+          </Button>
         </div>
-
-        <div className="mt-auto pt-16 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Icon name="security" filled size={20} className="text-primary" />
-            <span className="text-label-sm font-label-sm text-on-surface tracking-widest uppercase">AES-256 Encrypted Session</span>
-          </div>
-          <p className="text-[10px] text-on-surface-variant uppercase tracking-tighter opacity-60">
-            © 2026 Igarra Development Association (IDA). Official Electoral Commission.
-          </p>
-        </div>
-      </main>
-    </>
+      </div>
+    </VoterShell>
   );
 }

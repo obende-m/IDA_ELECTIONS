@@ -2,7 +2,8 @@ import { prisma } from '../../lib/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import { writeAuditLog } from '../../lib/audit';
 import { generateVoteReferenceNumber } from '../../lib/voteReference';
-import { getValidToken } from '../voters/voter.service';
+import { getValidToken, lockVoterRow } from '../voters/voter.service';
+import { applyScheduledTransition } from '../../lib/election';
 import { recordVoteInTallies } from '../analytics/analytics.service';
 import type { CastVoteInput, VoteRecordsQuery } from './voting.validation';
 import type { Actor } from '../../lib/actor';
@@ -10,9 +11,19 @@ import type { Actor } from '../../lib/actor';
 export async function getBallot(rawToken: string, req?: import('express').Request) {
   const token = await getValidToken(rawToken, req);
 
-  const election = await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } });
+  // Voters never go through getCurrentElection(), so apply the scheduled open/close here too:
+  // otherwise voting could stay open past endTime (or not open at startTime) until an admin request.
+  const election = await applyScheduledTransition(
+    await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } })
+  );
   if (election.status !== 'ACTIVE') {
     throw new AppError('Voting is not currently open for this election.', 409);
+  }
+  if (election.isLocked) {
+    throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
+  }
+  if (!token.voter.isActive) {
+    throw new AppError('This voter account is not active. Please contact the Electoral Committee.', 403);
   }
 
   const positions = await prisma.position.findMany({
@@ -41,12 +52,17 @@ export async function getBallot(rawToken: string, req?: import('express').Reques
 export async function castVote(rawToken: string, input: CastVoteInput, req?: import('express').Request): Promise<{ referenceNumber: string }> {
   const token = await getValidToken(rawToken, req);
 
-  const election = await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } });
+  const election = await applyScheduledTransition(
+    await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } })
+  );
   if (election.status !== 'ACTIVE') {
     throw new AppError('Voting is not currently open for this election.', 409);
   }
   if (election.isLocked) {
     throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
+  }
+  if (!token.voter.isActive) {
+    throw new AppError('This voter account is not active. Please contact the Electoral Committee.', 403);
   }
 
   const positions = await prisma.position.findMany({
@@ -55,7 +71,15 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
   });
   const positionMap = new Map(positions.map((p) => [p.id, p]));
 
+  // The same position may appear only once: otherwise a voter could split a 1-seat position across
+  // two entries and exceed maxSelections.
+  const seenPositionIds = new Set<string>();
   for (const selection of input.selections) {
+    if (seenPositionIds.has(selection.positionId)) {
+      throw new AppError('Each position may only appear once in a ballot.', 400);
+    }
+    seenPositionIds.add(selection.positionId);
+
     const position = positionMap.get(selection.positionId);
     if (!position) throw new AppError('One of the selected positions is invalid.', 400);
 
@@ -91,6 +115,30 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
   const abstainedPositionIds = input.selections.filter((s) => s.candidateIds.length === 0).map((s) => s.positionId);
 
   await prisma.$transaction(async (tx) => {
+    // Share-lock the election row for the duration of this ballot. closeElection/lockElection take an
+    // exclusive row lock when they update the election, so a vote is either fully committed before the
+    // election closes (and therefore inside the certified snapshot) or sees the closed/locked state here
+    // and is rejected — never counted after certification.
+    await tx.$queryRaw`SELECT id FROM elections WHERE id = ${token.electionId} FOR SHARE`;
+    const live = await tx.election.findUniqueOrThrow({
+      where: { id: token.electionId },
+      select: { status: true, isLocked: true },
+    });
+    if (live.status !== 'ACTIVE') {
+      throw new AppError('Voting is not currently open for this election.', 409);
+    }
+    if (live.isLocked) {
+      throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
+    }
+
+    // Serialise with every link operation for this voter, then refuse if they have ALREADY voted on any link
+    // (covers stale/duplicate links minted before this guard existed). One voter, one ballot.
+    await lockVoterRow(tx, token.voterId);
+    const alreadyVoted = await tx.votingToken.findFirst({ where: { voterId: token.voterId, status: 'CONSUMED' }, select: { id: true } });
+    if (alreadyVoted) {
+      throw new AppError('This voter has already voted. This voting link is no longer valid.', 410);
+    }
+
     const claimed = await tx.votingToken.updateMany({
       where: { id: token.id, status: 'ISSUED' },
       data: { status: 'CONSUMED', consumedAt: castAt },
@@ -98,6 +146,11 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
     if (claimed.count === 0) {
       throw new AppError('This voting link has already been used.', 410);
     }
+    // Any other outstanding link for this voter is now void.
+    await tx.votingToken.updateMany({
+      where: { voterId: token.voterId, status: 'ISSUED', id: { not: token.id } },
+      data: { status: 'REVOKED', revokedAt: castAt },
+    });
 
     if (voteRows.length > 0) {
       await tx.vote.createMany({ data: voteRows });
@@ -106,7 +159,10 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
     await tx.voter.update({ where: { id: token.voterId }, data: { votingStatus: 'VOTED' } });
 
     await recordVoteInTallies(tx, token.electionId, { candidateIds, abstainedPositionIds, castAt });
-  });
+    // maxWait: when many voters submit at once, wait in the connection queue rather than failing with
+    // "Unable to start a transaction in the given time" (Prisma's default is only 2 s). A failed start
+    // consumes nothing - the token stays valid - but waiting is a far better voter experience.
+  }, { maxWait: 20000, timeout: 20000 });
 
   await writeAuditLog({
     action: 'VOTE_CAST',

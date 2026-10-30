@@ -1,142 +1,100 @@
-import { useState } from 'react';
-import { Badge, DataTable, Field, Icon, SelectField, type DataTableColumn } from '../../components/ui';
+import { useEffect, useState } from 'react';
+import { Badge, Button, Card, DataTable, Field, Pagination, SearchInput, SelectField, PageHeader, type DataTableColumn } from '../../components/ui';
+import { SensitiveNote } from '../../components/AdminNotices';
 import { useAuditActions, useAuditLog } from '../../features/audit/useAudit';
+import { useDebounced } from '../../lib/useDebounced';
 import type { AuditLogEntry } from '../../features/audit/types';
 
 const PAGE_SIZE = 25;
+const humanize = (action: string) => action.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+const tone = (action: string): 'error' | 'warning' | 'success' | 'neutral' =>
+  /DENIED|FAILED|LOCKED|REVOKED|DELETED/.test(action) ? 'error' : /UNLOCK|PAUSED|EXPORT|RECORDS_VIEWED/.test(action) ? 'warning' : /OPENED|CAST|ISSUED|CREATED/.test(action) ? 'success' : 'neutral';
 
-/**
- * No Stitch mock exists for this screen. Unlike Vote Records, this is visible to any admin role —
- * individual voter identity is protected by redaction at the API layer (redactActorName, see
- * server/src/lib/audit.ts), not by restricting who can view the page.
- */
+/** Visible to every admin role: voter identity is redacted at the API layer, not by hiding this page. */
 export function AuditPage() {
   const [search, setSearch] = useState('');
+  const debounced = useDebounced(search);
   const [action, setAction] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [debounced, action, from, to]);
 
   const { data: actionsData } = useAuditActions();
-  const { data, isLoading } = useAuditLog({
-    search: search || undefined,
-    action: action || undefined,
-    from: from || undefined,
-    to: to || undefined,
-    page,
-    pageSize: PAGE_SIZE,
-  });
-
-  const resetToFirstPage = () => setPage(1);
+  const { data, isLoading, isError, error, refetch } = useAuditLog({ search: debounced || undefined, action: action || undefined, from: from || undefined, to: to || undefined, page, pageSize: PAGE_SIZE });
 
   const columns: DataTableColumn<AuditLogEntry>[] = [
-    { key: 'timestamp', header: 'Timestamp', render: (r) => new Date(r.timestamp).toLocaleString() },
-    { key: 'action', header: 'Action', render: (r) => <Badge variant="outline">{r.action}</Badge> },
-    { key: 'actor', header: 'Actor', render: (r) => r.actorName ?? (r.actorRole === 'VOTER' ? 'Voter (identity protected)' : '—') },
-    { key: 'targetType', header: 'Target', render: (r) => r.targetType ?? '—' },
+    {
+      key: 'timestamp',
+      header: 'When',
+      sortValue: (r) => r.timestamp,
+      render: (r) => (
+        <time dateTime={r.timestamp} className="font-mono text-[0.75rem] text-on-surface-variant whitespace-nowrap tabular">
+          {new Date(r.timestamp).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'medium' })}
+        </time>
+      ),
+    },
+    { key: 'action', header: 'Event', sortValue: (r) => r.action, render: (r) => <Badge variant={tone(r.action)}>{humanize(r.action)}</Badge> },
+    {
+      key: 'actor',
+      header: 'By',
+      render: (r) => r.actorName ?? <span className="text-secondary italic">{r.actorRole === 'VOTER' ? 'Voter (identity protected)' : 'System'}</span>,
+    },
+    { key: 'target', header: 'Target', hideOnMobile: true, render: (r) => <span className="text-secondary">{r.targetType ? humanize(r.targetType) : '—'}</span> },
   ];
 
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const filtered = Boolean(search || action || from || to);
 
   return (
     <>
-      <section className="border-b border-outline-variant pb-6">
-        <h1 className="text-headline-xl font-headline-xl uppercase">Audit Logs</h1>
-        <p className="text-body-lg text-secondary">Searchable trail of every security-relevant system action.</p>
-      </section>
+      <PageHeader kicker="Oversight" title="Audit trail" description="Every security-relevant action, in order. Entries cannot be edited from the portal." />
+      <SensitiveNote>
+        Voter identities are never shown here — actions taken by a voter, such as casting a ballot, are recorded with their identity protected.
+      </SensitiveNote>
 
-      <section className="flex items-start gap-3 bg-on-background text-on-primary rounded-xl shadow-sm border border-primary-container px-6 py-4">
-        <Icon name="security" filled className="text-primary-container shrink-0" />
-        <p className="text-body-md text-secondary-fixed">
-          Individual voter identities are never shown here — actions performed by a voter (e.g. casting a ballot) are
-          recorded with their identity protected. This log cannot be edited or deleted.
-        </p>
-      </section>
-
-      <section className="bg-surface-container-low border border-outline-variant rounded-xl shadow-sm p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
-        <div className="sm:col-span-2 lg:col-span-5">
-          <Field
-            icon="search"
-            placeholder="Search by action or target..."
-            aria-label="Search audit log"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              resetToFirstPage();
-            }}
-          />
-        </div>
-        <div className="lg:col-span-3">
-          <SelectField
-            aria-label="Filter by action"
-            value={action}
-            onChange={(e) => {
-              setAction(e.target.value);
-              resetToFirstPage();
-            }}
-          >
-            <option value="">All Actions</option>
+      <Card className="overflow-hidden">
+        <div className="px-5 sm:px-6 py-4 border-b border-outline-variant grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_10rem_10rem_auto] items-end">
+          <SearchInput value={search} onChange={setSearch} label="Search the audit trail" placeholder="Search events or people…" className="sm:col-span-2 lg:col-span-1" />
+          <SelectField aria-label="Filter by event" value={action} onChange={(e) => setAction(e.target.value)}>
+            <option value="">All events</option>
             {actionsData?.actions.map((a) => (
               <option key={a} value={a}>
-                {a}
+                {humanize(a)}
               </option>
             ))}
           </SelectField>
+          <Field type="date" aria-label="From date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+          <Field type="date" aria-label="To date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+          {filtered ? (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSearch('');
+                setAction('');
+                setFrom('');
+                setTo('');
+              }}
+            >
+              Clear
+            </Button>
+          ) : (
+            <span />
+          )}
         </div>
-        <div className="lg:col-span-2">
-          <Field
-            type="date"
-            aria-label="From date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              resetToFirstPage();
-            }}
-          />
-        </div>
-        <div className="lg:col-span-2">
-          <Field
-            type="date"
-            aria-label="To date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              resetToFirstPage();
-            }}
-          />
-        </div>
-      </section>
-
-      <section className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
         <DataTable
           columns={columns}
           rows={data?.entries ?? []}
           rowKey={(r) => r.id}
-          emptyMessage={isLoading ? 'Loading audit log…' : 'No audit entries match your filters.'}
+          label="Audit trail"
+          emptyMessage="No audit entries match your filters."
+          isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => refetch()}
         />
-        <div className="flex justify-between items-center px-4 py-4 bg-surface-container-lowest border-t border-outline-variant">
-          <p className="text-label-md font-label-md text-secondary">
-            {total === 0 ? 'No entries' : `Page ${page} of ${totalPages} — ${total} entries`}
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <Icon name="chevron_left" size={18} />
-            </button>
-            <button
-              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              <Icon name="chevron_right" size={18} />
-            </button>
-          </div>
-        </div>
-      </section>
+        <Pagination page={page} totalPages={totalPages} summary={total === 0 ? 'No entries' : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total} entries`} onPageChange={setPage} />
+      </Card>
     </>
   );
 }

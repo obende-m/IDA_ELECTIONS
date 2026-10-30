@@ -228,15 +228,57 @@ async function createTokenRow(
   return { token, rawToken };
 }
 
+const ALREADY_VOTED_MESSAGE = 'This voter has already voted, so no new voting link can be issued.';
+
+/** Serialises every token operation (and the vote itself) for one voter: two admins, or an admin and the voter, can never interleave. */
+export async function lockVoterRow(tx: Prisma.TransactionClient, voterId: string): Promise<void> {
+  await tx.$queryRaw`SELECT id FROM voters WHERE id = ${voterId} FOR UPDATE`;
+}
+
+/** A voter who has cast a ballot (a CONSUMED token exists) can never be issued another link. */
+async function assertVoterHasNotVoted(db: DbClient, voterId: string): Promise<void> {
+  const [consumed, voter] = await Promise.all([
+    db.votingToken.findFirst({ where: { voterId, status: 'CONSUMED' }, select: { id: true } }),
+    db.voter.findUnique({ where: { id: voterId }, select: { votingStatus: true } }),
+  ]);
+  if (consumed || voter?.votingStatus === 'VOTED') throw new AppError(ALREADY_VOTED_MESSAGE, 409);
+}
+
+/** Records a refused attempt (someone tried to mint a link for a voter who already voted) before surfacing the error. */
+async function auditBlockedIssue(electionId: string, voterId: string, actor: Actor, attempt: string, req?: import('express').Request) {
+  await writeAuditLog({
+    action: 'TOKEN_ISSUE_BLOCKED_ALREADY_VOTED',
+    actorId: actor.id,
+    actorRole: actor.role,
+    actorName: actor.fullName,
+    targetType: 'VOTER',
+    targetId: voterId,
+    electionId,
+    metadata: { attempt },
+    req,
+  });
+}
+
 export async function issueToken(electionId: string, voterId: string, actor: Actor, req?: import('express').Request) {
   await assertElectionNotLocked(electionId);
   const voter = await getVoter(electionId, voterId);
-  const activeToken = await prisma.votingToken.findFirst({ where: { voterId: voter.id, status: 'ISSUED' } });
-  if (activeToken) {
-    throw new AppError('This voter already has an active token. Use "Issue New Token" to replace it.', 409);
-  }
 
-  const { token, rawToken } = await createTokenRow(prisma, electionId, voter.id, actor.id);
+  let created: { token: VotingToken; rawToken: string };
+  try {
+    created = await prisma.$transaction(async (tx) => {
+      await lockVoterRow(tx, voter.id);
+      await assertVoterHasNotVoted(tx, voter.id);
+      const activeToken = await tx.votingToken.findFirst({ where: { voterId: voter.id, status: 'ISSUED' } });
+      if (activeToken) {
+        throw new AppError('This voter already has an active token. Use "Issue New Token" to replace it.', 409);
+      }
+      return createTokenRow(tx, electionId, voter.id, actor.id);
+    });
+  } catch (err) {
+    if (err instanceof AppError && err.message === ALREADY_VOTED_MESSAGE) await auditBlockedIssue(electionId, voter.id, actor, 'issue', req);
+    throw err;
+  }
+  const { token, rawToken } = created;
 
   await writeAuditLog({
     action: 'TOKEN_ISSUED',
@@ -287,35 +329,37 @@ export async function revokeToken(electionId: string, voterId: string, actor: Ac
 export async function replaceToken(electionId: string, voterId: string, actor: Actor, req?: import('express').Request) {
   await assertElectionNotLocked(electionId);
   const voter = await getVoter(electionId, voterId);
-  const activeToken = await prisma.votingToken.findFirst({ where: { voterId: voter.id, status: 'ISSUED' } });
 
-  const consumedToken = await prisma.votingToken.findFirst({ where: { voterId: voter.id, status: 'CONSUMED' } });
-  if (consumedToken && !activeToken) {
-    throw new AppError('This voter has already voted. A consumed token can never be replaced.', 409);
+  let result: { token: VotingToken; rawToken: string; revokedIds: string[] };
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      await lockVoterRow(tx, voter.id);
+      await assertVoterHasNotVoted(tx, voter.id);
+
+      // Void EVERY outstanding link for this voter, then issue exactly one new one: the old link(s) stop working immediately.
+      const outstanding = await tx.votingToken.findMany({ where: { voterId: voter.id, status: 'ISSUED' }, orderBy: { issuedAt: 'desc' }, select: { id: true } });
+      if (outstanding.length > 0) {
+        await tx.votingToken.updateMany({
+          where: { id: { in: outstanding.map((t) => t.id) } },
+          data: { status: 'REVOKED', revokedAt: new Date(), revokedById: actor.id },
+        });
+      }
+      const { token, rawToken } = await createTokenRow(tx, electionId, voter.id, actor.id, outstanding[0]?.id);
+      return { token, rawToken, revokedIds: outstanding.map((t) => t.id) };
+    });
+  } catch (err) {
+    if (err instanceof AppError && err.message === ALREADY_VOTED_MESSAGE) await auditBlockedIssue(electionId, voter.id, actor, 'replace', req);
+    throw err;
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    let previousId: string | undefined;
-    if (activeToken) {
-      await tx.votingToken.update({
-        where: { id: activeToken.id },
-        data: { status: 'REVOKED', revokedAt: new Date(), revokedById: actor.id },
-      });
-      previousId = activeToken.id;
-    }
-
-    const { token, rawToken } = await createTokenRow(tx, electionId, voter.id, actor.id, previousId);
-    return { token, rawToken, revokedPreviousId: previousId };
-  });
-
-  if (result.revokedPreviousId) {
+  for (const revokedId of result.revokedIds) {
     await writeAuditLog({
       action: 'TOKEN_REVOKED',
       actorId: actor.id,
       actorRole: actor.role,
       actorName: actor.fullName,
       targetType: 'VOTING_TOKEN',
-      targetId: result.revokedPreviousId,
+      targetId: revokedId,
       electionId,
       metadata: { voterId: voter.id, reason: 'replaced' },
       req,
@@ -329,7 +373,7 @@ export async function replaceToken(electionId: string, voterId: string, actor: A
     targetType: 'VOTING_TOKEN',
     targetId: result.token.id,
     electionId,
-    metadata: { voterId: voter.id, replacesTokenId: result.revokedPreviousId },
+    metadata: { voterId: voter.id, replacesTokenId: result.revokedIds[0] },
     req,
   });
 

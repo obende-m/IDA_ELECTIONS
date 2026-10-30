@@ -17,39 +17,40 @@ export function LockBanner({ election }: LockBannerProps) {
   const unlockElection = useUnlockElection();
 
   if (!election.isLocked) return null;
-
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const handleUnlock = async (reason: string) => {
     await unlockElection.mutateAsync(reason);
-    toast({ title: 'Election unlocked', description: 'This election is now editable again.', variant: 'success' });
+    toast({ title: 'Election unlocked', description: 'This election is editable again.', variant: 'success' });
     setModalOpen(false);
   };
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-on-background text-on-primary border border-error rounded-xl shadow-sm px-6 py-4">
+      <div role="status" className="animate-fade flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl bg-on-background text-on-primary px-5 py-4">
         <div className="flex items-start gap-3">
-          <Icon name="lock" filled className="text-error shrink-0" />
+          <span className="w-9 h-9 rounded-lg bg-white/10 text-primary-fixed-dim flex items-center justify-center shrink-0">
+            <Icon name="lock" size={18} />
+          </span>
           <div>
-            <p className="text-label-md font-label-md uppercase tracking-widest text-error">Election Locked</p>
-            <p className="text-body-md text-secondary-fixed">
-              No votes, tokens, voter records, candidates, or election settings can be changed
-              {election.lockedBy ? ` — locked by ${election.lockedBy.fullName}` : ''}
+            <p className="font-medium">Election locked — read-only</p>
+            <p className="mt-0.5 text-[0.8125rem] text-on-primary/70">
+              Votes, voting links, voter records, the ballot and settings cannot be changed
+              {election.lockedBy ? ` · locked by ${election.lockedBy.fullName}` : ''}
               {election.lockedAt ? ` on ${new Date(election.lockedAt).toLocaleString()}` : ''}.
             </p>
           </div>
         </div>
         {isSuperAdmin && (
-          <Button variant="secondary" size="sm" className="shrink-0" onClick={() => setModalOpen(true)}>
-            Unlock Election
+          <Button variant="secondary" size="sm" leftIcon="lock_open" className="shrink-0" onClick={() => setModalOpen(true)}>
+            Unlock
           </Button>
         )}
       </div>
 
       <LockReasonModal
         open={modalOpen}
-        title="Unlock Election"
+        title="Unlock election"
         actionLabel="Unlock"
         minLength={10}
         helperText="Unlocking allows records to be modified again. This action and your justification are permanently recorded in the audit log."

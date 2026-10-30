@@ -72,11 +72,22 @@ async function rowsFromExcel(buffer: Buffer): Promise<RawRow[]> {
     const record: RawRow = {};
     headers.forEach((header, i) => {
       if (!header) return;
-      record[header] = values[i];
+      record[header] = cellText(values[i]);
     });
     rows.push(record);
   });
   return rows;
+}
+
+/** ExcelJS returns rich objects for hyperlinks/formulas/rich text; flatten them to plain text. */
+function cellText(value: unknown): unknown {
+  if (value && typeof value === 'object') {
+    const v = value as { text?: unknown; result?: unknown; richText?: Array<{ text: string }> };
+    if (Array.isArray(v.richText)) return v.richText.map((r) => r.text).join('');
+    if (v.text !== undefined) return String(v.text);
+    if (v.result !== undefined) return String(v.result);
+  }
+  return value;
 }
 
 function coerceIsActive(value: unknown): boolean {
@@ -130,7 +141,7 @@ export async function importVoters(
 ): Promise<ImportReport> {
   await assertElectionNotLocked(electionId);
 
-  const isExcel = /\.xlsx?$/i.test(file.originalname) || file.mimetype.includes('sheet') || file.mimetype.includes('excel');
+  const isExcel = /\.xlsx$/i.test(file.originalname) || file.mimetype.includes('sheet');
   const rawRows = isExcel ? await rowsFromExcel(file.buffer) : rowsFromCsv(file.buffer);
 
   const report: ImportReport = { totalRows: rawRows.length, imported: [], updated: [], skipped: [], duplicates: [], invalid: [] };

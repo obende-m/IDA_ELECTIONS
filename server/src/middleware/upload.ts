@@ -1,14 +1,14 @@
 import multer from 'multer';
 import { AppError } from './errorHandler';
 
-const ALLOWED_EXTENSIONS = /\.(csv|xlsx|xls)$/i;
+const ALLOWED_EXTENSIONS = /\.(csv|xlsx)$/i;
 
 export const uploadSpreadsheet = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!ALLOWED_EXTENSIONS.test(file.originalname)) {
-      return cb(new AppError('Only .csv, .xlsx, or .xls files are accepted', 400));
+      return cb(new AppError('Only .csv or .xlsx files are accepted (save older .xls files as .xlsx first)', 400));
     }
     cb(null, true);
   },

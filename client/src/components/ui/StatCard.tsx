@@ -7,41 +7,35 @@ export interface StatCardProps {
   value: ReactNode;
   icon?: string;
   helpText?: ReactNode;
-  /** Black "inverse" tile used for the Time Remaining KPI on the admin dashboard. */
+  /** Ink (charcoal) tile — for the single most time-critical figure. */
   inverse?: boolean;
   className?: string;
+  /** Optional visual under the value (e.g. a progress bar). */
+  children?: ReactNode;
 }
 
-/** KPI tile: gold top border, uppercase tracked label, large headline value (Admin Dashboard "bento" stat cards). */
-export function StatCard({ label, value, icon, helpText, inverse, className }: StatCardProps) {
+/** KPI tile: mono label, large serif figure, quiet supporting line. */
+export function StatCard({ label, value, icon, helpText, inverse, className, children }: StatCardProps) {
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 p-6 rounded-xl transition-all',
-        inverse
-          ? 'bg-on-background text-on-primary shadow-sm'
-          : 'bg-surface border-t-2 border-primary-container border-x border-b border-outline-variant shadow-sm hover:shadow-md',
+        'relative flex flex-col justify-between gap-4 p-4 sm:p-6 rounded-xl border min-h-[8.5rem] min-w-0',
+        inverse ? 'bg-on-background text-on-primary border-on-background' : 'bg-surface-container-lowest border-outline-variant',
         className
       )}
     >
-      <div className="flex justify-between items-start">
-        <span
-          className={cn(
-            'text-label-md font-label-md uppercase tracking-widest',
-            inverse ? 'text-primary-container' : 'text-secondary'
-          )}
-        >
-          {label}
-        </span>
-        {icon && <Icon name={icon} className={inverse ? 'text-primary-container' : 'text-primary'} />}
-      </div>
-      <div className="flex flex-col">
-        <span className="text-headline-lg font-headline-lg">{value}</span>
-        {helpText && (
-          <span className={cn('text-label-sm font-label-sm', inverse ? 'text-secondary-fixed' : 'text-secondary font-bold')}>
-            {helpText}
+      <div className="flex justify-between items-start gap-3">
+        <span className={cn('eyebrow', inverse && '!text-primary-fixed-dim')}>{label}</span>
+        {icon && (
+          <span className={cn('w-8 h-8 rounded-lg flex items-center justify-center', inverse ? 'bg-white/8 text-primary-fixed-dim' : 'bg-surface-container-low text-primary')}>
+            <Icon name={icon} size={17} />
           </span>
         )}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <span className="font-serif text-[1.75rem] sm:text-[2.25rem] leading-none tracking-[-0.02em] tabular">{value}</span>
+        {helpText && <span className={cn('text-[0.8125rem]', inverse ? 'text-on-primary/65' : 'text-secondary')}>{helpText}</span>}
+        {children}
       </div>
     </div>
   );

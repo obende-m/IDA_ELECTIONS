@@ -42,7 +42,7 @@ export async function getCurrentElection(): Promise<Election> {
  * Both transitions use a compare-and-swap update (mirrors castVote's token-claim pattern) so
  * concurrent requests can never double-transition or double-certify.
  */
-async function applyScheduledTransition(election: Election): Promise<Election> {
+export async function applyScheduledTransition(election: Election): Promise<Election> {
   const now = new Date();
 
   if (election.status === 'DRAFT' && !election.isLocked && election.startTime && election.startTime <= now) {
@@ -85,7 +85,7 @@ async function applyScheduledTransition(election: Election): Promise<Election> {
         },
         // Default 5s interactive-transaction timeout is too tight for certifyElectionResults' read
         // fan-out (positions/candidates/activity/audit log) over the network to Supabase's pooler.
-        { timeout: 15000 }
+        { maxWait: 20000, timeout: 15000 }
       );
       await writeAuditLog({
         action: 'ELECTION_CLOSED',

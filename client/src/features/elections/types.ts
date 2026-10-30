@@ -20,6 +20,7 @@ export interface ElectionFormValues {
   title: string;
   year: number;
   description?: string;
-  startTime?: string;
-  endTime?: string;
+  /** ISO-8601 UTC string; null (or empty) clears the scheduled time. */
+  startTime?: string | null;
+  endTime?: string | null;
 }

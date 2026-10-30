@@ -59,3 +59,23 @@ point:
 3. Update `CLIENT_URL`/`VOTING_LINK_BASE_URL` (Render) and `VITE_API_URL` (Vercel) to the new URLs.
 
 No code changes required either way.
+
+## Operations runbook (election day)
+
+**Before opening the election**
+1. Render: move the service off the free plan (`plan: starter` in `server/render.yaml`) — free instances sleep after ~15 min and take 30–60 s to wake. If that is not possible, re-enable the schedule in `.github/workflows/keep-alive.yml` *and* add an external uptime monitor.
+2. Uptime monitoring: point UptimeRobot / BetterStack (free tiers are fine) at `https://<render-url>/api/health/ready` every 1–5 min with e-mail/SMS alerts. `/api/health/ready` also proves the database connection works; `/api/health` is the lightweight check Render itself uses.
+3. Supabase → Database → Backups: confirm daily backups are on (Pro plan adds point-in-time recovery). Take a manual backup immediately before opening and again right after closing: `pg_dump "$DIRECT_URL" -Fc -f ida-$(date +%F-%H%M).dump`.
+4. Restore drill (do this once, on a *separate* scratch database, never on production): `createdb ida_restore && pg_restore -d ida_restore --no-owner ida-<date>.dump`, then start the server against it and open the dashboard.
+5. Do a dry run with fake voters in a separate election/database before using real data (import → issue links → vote → results → close).
+6. Rotate the seeded admin password; keep at least two active SUPER_ADMIN accounts. Password-reset e-mails are not wired up in production — a locked-out admin is reset by another SUPER_ADMIN under *Admin Accounts*.
+
+**Rollback**
+- Frontend: Vercel → Deployments → "Promote to Production" on the previous deployment (instant).
+- Backend: Render → Deploys → "Rollback" to the previous deploy. Migrations are additive (new indexes only in the latest one), so rolling the code back is safe without touching the database.
+- Never run `prisma migrate reset` or `db push --force-reset` against the production database.
+
+**During the election**
+- Use *Pause Election* (not close) for any interruption; use *Emergency Lock* only for suspected tampering.
+- Opening/closing/schedule edits require the Election Committee or Super Admin role.
+- The ballot structure (positions, candidates, seat counts) freezes once the first ballot is cast.
