@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActionMenu, Badge, Button, Card, DataTable, PageHeader, Pagination, SearchInput, Tabs, useConfirm, useToast, type DataTableColumn, type MenuItem } from '../../components/ui';
 import { useDeleteVoter, useIssueToken, useRevokeToken, useReplaceToken, useSetVoterActive, useVotersList } from '../../features/voters/useVoters';
 import { votersApi } from '../../features/voters/votersApi';
+import { buildInviteMessage } from '../../features/voters/inviteMessage';
 import { VoterFormModal } from '../../features/voters/VoterFormModal';
 import { ImportVotersModal } from '../../features/voters/ImportVotersModal';
 import { useCurrentElection } from '../../features/elections/useElection';
@@ -84,8 +85,10 @@ export function VotersPage() {
   const copyLink = async (v: Voter) => {
     try {
       const { votingLink } = await votersApi.votingLink(v.id);
-      await navigator.clipboard.writeText(votingLink);
-      toast({ title: 'Voting link copied', description: `Send it privately to ${v.fullName}.`, variant: 'success' });
+      await navigator.clipboard.writeText(
+        buildInviteMessage({ fullName: v.fullName, votingLink, electionTitle: election?.title, endTime: election?.endTime })
+      );
+      toast({ title: 'Message copied', description: `Paste it into WhatsApp, SMS or email for ${v.fullName}. Their link is inside.`, variant: 'success' });
     } catch {
       toast({ title: 'Could not copy link', variant: 'error' });
     }
@@ -168,7 +171,7 @@ export function VotersPage() {
       render: (v) => {
         const items: MenuItem[] = [
           { label: 'Issue voting link', icon: 'link', hidden: v.votingStatus !== 'NOT_ISSUED', disabled: isLocked || !v.isActive, onSelect: () => issue(v) },
-          { label: 'Copy voting link', icon: 'content_copy', hidden: v.votingStatus !== 'ISSUED', onSelect: () => copyLink(v) },
+          { label: 'Copy message with link', icon: 'content_copy', hidden: v.votingStatus !== 'ISSUED', onSelect: () => copyLink(v) },
           { label: 'Issue new link', icon: 'refresh', hidden: v.votingStatus !== 'ISSUED' && v.votingStatus !== 'REVOKED', disabled: isLocked, onSelect: () => replace(v) },
           { label: 'Edit details', icon: 'edit', disabled: isLocked, onSelect: () => setFormVoter(v) },
           { label: v.isActive ? 'Deactivate' : 'Activate', icon: v.isActive ? 'block' : 'check_circle', disabled: isLocked, onSelect: () => toggleActive(v) },
@@ -183,7 +186,7 @@ export function VotersPage() {
                 onClick={() => copyLink(v)}
                 className="hidden sm:inline-flex h-8 px-2.5 rounded-lg text-[0.8125rem] font-medium text-primary hover:bg-primary-soft items-center gap-1"
               >
-                Copy link
+                Copy message
               </button>
             )}
             {v.votingStatus === 'NOT_ISSUED' && v.isActive && (
