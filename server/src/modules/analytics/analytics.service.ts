@@ -52,6 +52,25 @@ export interface RecentActivityEntry {
   targetType: string | null;
 }
 
+/** Voting-link accounting: how many links were generated, used, voided and are still waiting. */
+export interface LinkStats {
+  /** Every link ever generated for this election (including voided ones). */
+  generated: number;
+  /** Links that were used to cast a ballot. */
+  used: number;
+  /** Live links that have not been used yet. */
+  awaiting: number;
+  /** Links voided: replaced by a newer link, revoked, or superseded when the voter voted. */
+  voided: number;
+  /** Links generated as a replacement for an earlier one. */
+  reissued: number;
+  /** Registered voters who have been issued at least one link / none at all. */
+  votersWithLink: number;
+  votersWithoutLink: number;
+  /** used / generated, as a percentage. */
+  usedPct: number;
+}
+
 export interface ElectionAnalytics {
   schemaVersion: number;
   election: {
@@ -67,6 +86,8 @@ export interface ElectionAnalytics {
   /** Registered voters who never cast a ballot at all (distinct from a position-level abstention). */
   abstainedVoters: number;
   turnoutPct: number;
+  /** Absent on snapshots certified before link accounting existed. */
+  links?: LinkStats;
   positions: PositionResult[];
   timeline: TimelinePoint[];
   recentActivity: RecentActivityEntry[];
@@ -101,7 +122,7 @@ function startOfHour(date: Date): Date {
 async function computeLiveAnalytics(electionId: string, db: DbClient = prisma): Promise<ElectionAnalytics> {
   const election = await db.election.findUniqueOrThrow({ where: { id: electionId } });
 
-  const [registeredVoters, electionTally, positions, activityBuckets, recentLogs] = await Promise.all([
+  const [registeredVoters, electionTally, positions, activityBuckets, recentLogs, tokenGroups, reissued, votersWithLink] = await Promise.all([
     db.voter.count({ where: { electionId } }),
     db.electionTally.findUnique({ where: { electionId } }),
     db.position.findMany({
@@ -118,7 +139,23 @@ async function computeLiveAnalytics(electionId: string, db: DbClient = prisma): 
       orderBy: { timestamp: 'desc' },
       take: 10,
     }),
+    db.votingToken.groupBy({ by: ['status'], where: { electionId }, _count: { _all: true } }),
+    db.votingToken.count({ where: { electionId, replacesTokenId: { not: null } } }),
+    db.voter.count({ where: { electionId, tokens: { some: {} } } }),
   ]);
+
+  const tokenCount = (status: 'ISSUED' | 'CONSUMED' | 'REVOKED') => tokenGroups.find((g) => g.status === status)?._count._all ?? 0;
+  const generated = tokenCount('ISSUED') + tokenCount('CONSUMED') + tokenCount('REVOKED');
+  const links: LinkStats = {
+    generated,
+    used: tokenCount('CONSUMED'),
+    awaiting: tokenCount('ISSUED'),
+    voided: tokenCount('REVOKED'),
+    reissued,
+    votersWithLink,
+    votersWithoutLink: Math.max(registeredVoters - votersWithLink, 0),
+    usedPct: generated > 0 ? round2((tokenCount('CONSUMED') / generated) * 100) : 0,
+  };
 
   const ballotsCast = electionTally?.ballotsCast ?? 0;
   const turnoutPct = registeredVoters > 0 ? round2((ballotsCast / registeredVoters) * 100) : 0;
@@ -186,6 +223,7 @@ async function computeLiveAnalytics(electionId: string, db: DbClient = prisma): 
     ballotsCast,
     abstainedVoters,
     turnoutPct,
+    links,
     positions: positionResults,
     timeline,
     recentActivity,

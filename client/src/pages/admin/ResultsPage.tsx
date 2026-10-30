@@ -2,6 +2,7 @@ import { Badge, Button, Card, CardHeader, CardTitle, ErrorState, Icon, PageHeade
 import { useAnalytics } from '../../features/analytics/useAnalytics';
 import { getPositionOutcome, type PositionResult } from '../../features/analytics/types';
 import { cn } from '../../lib/cn';
+import { LinksCard } from '../../components/LinksCard';
 
 /** One contest as an editorial ruled list, ranked by votes, with a proportional bar per candidate. */
 function ContestResult({ position, index }: { position: PositionResult; index: number }) {
@@ -153,6 +154,7 @@ export function ResultsPage() {
                   </dl>
                 </div>
               </Card>
+              <LinksCard links={analytics.links} showManage={false} />
               <Card className="p-5 text-[0.8125rem] text-secondary space-y-2">
                 <p className="flex gap-2">
                   <Icon name="info" size={15} className="mt-0.5 shrink-0" />

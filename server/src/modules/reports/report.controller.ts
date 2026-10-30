@@ -83,6 +83,7 @@ export async function download(req: Request, res: Response) {
           { metric: 'Ballots Cast', value: report.analytics.ballotsCast },
           { metric: 'Abstained Voters', value: report.analytics.abstainedVoters },
           { metric: 'Turnout %', value: report.analytics.turnoutPct },
+          ...reportService.linkStatRows(report.analytics.links).map(([metric, value]) => ({ metric, value })),
         ],
         [
           { key: 'metric', header: 'Metric' },
@@ -107,6 +108,7 @@ export async function download(req: Request, res: Response) {
           { metric: 'Ballots Cast', value: report.ballotsCast },
           { metric: 'Abstained Voters', value: report.abstainedVoters },
           { metric: 'Turnout %', value: report.turnoutPct },
+          ...reportService.linkStatRows(report.links).map(([metric, value]) => ({ metric, value })),
         ],
         [
           { key: 'metric', header: 'Metric' },

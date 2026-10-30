@@ -52,7 +52,23 @@ export interface ParticipationReport {
   ballotsCast: number;
   abstainedVoters: number;
   turnoutPct: number;
+  links?: ElectionAnalytics['links'];
   timeline: ElectionAnalytics['timeline'];
+}
+
+/** Label/value rows for the voting-link accounting block, shared by every report format. */
+export function linkStatRows(links: ElectionAnalytics['links']): [string, number | string][] {
+  if (!links) return [['Voting links', 'Not recorded for this election']];
+  return [
+    ['Voting links generated', links.generated],
+    ['Links used to vote', links.used],
+    ['Links awaiting use', links.awaiting],
+    ['Links voided (replaced or revoked)', links.voided],
+    ['Links re-issued', links.reissued],
+    ['Voters issued a link', links.votersWithLink],
+    ['Voters with no link yet', links.votersWithoutLink],
+    ['Links used (% of generated)', `${links.usedPct}%`],
+  ];
 }
 
 export async function buildParticipationReport(electionId: string): Promise<ParticipationReport> {
@@ -63,6 +79,7 @@ export async function buildParticipationReport(electionId: string): Promise<Part
     ballotsCast: analytics.ballotsCast,
     abstainedVoters: analytics.abstainedVoters,
     turnoutPct: analytics.turnoutPct,
+    links: analytics.links,
     timeline: analytics.timeline,
   };
 }

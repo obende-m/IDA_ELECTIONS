@@ -4,6 +4,7 @@ import { Button, Card, CardHeader, CardTitle, ElectionStatusBadge, Icon, Progres
 import { useCurrentElection, useLockElection } from '../../features/elections/useElection';
 import { LockBanner } from '../../features/elections/LockBanner';
 import { LockReasonModal } from '../../features/elections/LockReasonModal';
+import { LinksCard } from '../../components/LinksCard';
 import { useAnalytics } from '../../features/analytics/useAnalytics';
 import { useAuth } from '../../features/auth/AuthContext';
 import { canManageElection } from '../../features/auth/permissions';
@@ -191,6 +192,8 @@ export function DashboardPage() {
         </Card>
 
         <div className="flex flex-col gap-6">
+          <LinksCard links={analytics?.links} />
+
           <Card>
             <CardHeader>
               <CardTitle kicker="Shortcuts">Next steps</CardTitle>

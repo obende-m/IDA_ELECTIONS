@@ -274,3 +274,68 @@ test('closing the election waits for an in-flight ballot transaction (row lock) 
   assert.equal(closeFinished, true);
   assert.equal((await prisma.election.findUniqueOrThrow({ where: { id: election.id } })).status, 'CLOSED');
 });
+
+test('a voter who has voted can never be issued another link (issue, replace, and API-level)', async () => {
+  const { election, position, candidates } = await makeElection();
+  const { voter, rawToken } = await makeVoterWithLink(election.id, 1);
+  await votingService.castVote(rawToken, { selections: [{ positionId: position.id, candidateIds: [candidates[0].id] }] });
+
+  await assert.rejects(voterService.issueToken(election.id, voter.id, actor()), /already voted/);
+  await assert.rejects(voterService.replaceToken(election.id, voter.id, actor()), /already voted/);
+  assert.equal(await prisma.votingToken.count({ where: { voterId: voter.id } }), 1, 'no extra link may be created');
+  assert.equal(await prisma.vote.count({ where: { voterId: voter.id } }), 1);
+  assert.ok(await prisma.auditLog.findFirst({ where: { action: 'TOKEN_ISSUE_BLOCKED_ALREADY_VOTED', targetId: voter.id } }), 'blocked attempts are audit-logged');
+});
+
+test('issuing a new link voids the previous one immediately', async () => {
+  const { election, position, candidates } = await makeElection();
+  const { voter, rawToken: oldToken } = await makeVoterWithLink(election.id, 1);
+  const { votingLink } = await voterService.replaceToken(election.id, voter.id, actor());
+  const newToken = votingLink.split('/vote/')[1];
+
+  await assert.rejects(votingService.getBallot(oldToken), /revoked/);
+  await assert.rejects(votingService.castVote(oldToken, { selections: [{ positionId: position.id, candidateIds: [candidates[0].id] }] }), /revoked/);
+  assert.equal(await prisma.votingToken.count({ where: { voterId: voter.id, status: 'ISSUED' } }), 1, 'exactly one live link');
+  await votingService.castVote(newToken, { selections: [{ positionId: position.id, candidateIds: [candidates[0].id] }] });
+});
+
+test('concurrent issue + replace never leaves two live links', async () => {
+  const { election } = await makeElection();
+  const voter = await prisma.voter.create({ data: { electionId: election.id, membershipNumber: `C-${Date.now()}`, fullName: 'Race Voter' } });
+  await Promise.allSettled([
+    voterService.issueToken(election.id, voter.id, actor()),
+    voterService.issueToken(election.id, voter.id, actor()),
+    voterService.replaceToken(election.id, voter.id, actor()),
+    voterService.replaceToken(election.id, voter.id, actor()),
+  ]);
+  assert.equal(await prisma.votingToken.count({ where: { voterId: voter.id, status: 'ISSUED' } }), 1);
+});
+
+test('database refuses a second live link or a second used link for one voter', async () => {
+  const { election } = await makeElection();
+  const { voter } = await makeVoterWithLink(election.id, 1);
+  const mk = (status: 'ISSUED' | 'CONSUMED', n: string) =>
+    prisma.votingToken.create({ data: { electionId: election.id, voterId: voter.id, tokenHash: `h-${n}-${Date.now()}`, tokenEncrypted: 'x', status } });
+  await assert.rejects(mk('ISSUED', 'a'), /Unique constraint/);
+  await prisma.votingToken.updateMany({ where: { voterId: voter.id }, data: { status: 'REVOKED' } });
+  await mk('CONSUMED', 'b');
+  await assert.rejects(mk('CONSUMED', 'c'), /Unique constraint/);
+});
+
+test('link accounting: generated / used / awaiting / voided / re-issued add up', async () => {
+  const { election, position, candidates } = await makeElection();
+  const a = await makeVoterWithLink(election.id, 1); // will vote
+  const b = await makeVoterWithLink(election.id, 2); // will be re-issued once, then vote
+  await makeVoterWithLink(election.id, 3); // awaiting
+  await prisma.voter.create({ data: { electionId: election.id, membershipNumber: `N-${Date.now()}`, fullName: 'No Link' } });
+  await votingService.castVote(a.rawToken, { selections: [{ positionId: position.id, candidateIds: [candidates[0].id] }] });
+  const re = await voterService.replaceToken(election.id, b.voter.id, actor());
+  await votingService.castVote(re.votingLink.split('/vote/')[1], { selections: [{ positionId: position.id, candidateIds: [candidates[1].id] }] });
+
+  const { links } = await getElectionAnalytics(election.id);
+  assert.deepEqual(
+    { generated: links!.generated, used: links!.used, awaiting: links!.awaiting, voided: links!.voided, reissued: links!.reissued, withLink: links!.votersWithLink, noLink: links!.votersWithoutLink },
+    { generated: 4, used: 2, awaiting: 1, voided: 1, reissued: 1, withLink: 3, noLink: 1 }
+  );
+  assert.equal(links!.generated, links!.used + links!.awaiting + links!.voided);
+});

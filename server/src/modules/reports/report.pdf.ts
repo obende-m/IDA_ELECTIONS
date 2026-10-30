@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
 import type { Response } from 'express';
-import type { ElectionSummaryReport, PositionResultsReport, ParticipationReport, AuditReport } from './report.service';
+import { linkStatRows, type ElectionSummaryReport, type PositionResultsReport, type ParticipationReport, type AuditReport } from './report.service';
 
 /**
  * Hand-drawn PDFs via PDFKit vector primitives — no Chromium/native-canvas dependency, no
@@ -164,6 +164,9 @@ export function renderParticipationPdf(report: ParticipationReport, res: Respons
   statRow(doc, 'Ballots Cast', report.ballotsCast.toLocaleString());
   statRow(doc, 'Abstained Voters', report.abstainedVoters.toLocaleString());
   statRow(doc, 'Turnout', `${report.turnoutPct}%`);
+
+  sectionTitle(doc, 'Voting Links');
+  for (const [label, value] of linkStatRows(report.links)) statRow(doc, label, typeof value === 'number' ? value.toLocaleString() : value);
 
   sectionTitle(doc, 'Hourly Voting Activity');
   if (report.timeline.length === 0) {

@@ -32,6 +32,18 @@ export interface RecentActivityEntry {
   targetType: string | null;
 }
 
+/** Voting-link accounting. Absent on results certified before link tracking existed. */
+export interface LinkStats {
+  generated: number;
+  used: number;
+  awaiting: number;
+  voided: number;
+  reissued: number;
+  votersWithLink: number;
+  votersWithoutLink: number;
+  usedPct: number;
+}
+
 export interface ElectionAnalytics {
   schemaVersion: number;
   election: {
@@ -46,6 +58,7 @@ export interface ElectionAnalytics {
   ballotsCast: number;
   abstainedVoters: number;
   turnoutPct: number;
+  links?: LinkStats;
   positions: PositionResult[];
   timeline: TimelinePoint[];
   recentActivity: RecentActivityEntry[];

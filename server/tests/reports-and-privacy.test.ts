@@ -128,3 +128,13 @@ test('individual vote records: committee only, and every read is audit-logged', 
   assert.equal(res.status, 200);
   assert.equal(await prisma.auditLog.count({ where: { electionId, action: 'VOTE_RECORDS_VIEWED' } }), before + 1);
 });
+
+test('participation and summary reports include the voting-link accounting', async () => {
+  for (const type of ['participation', 'summary'] as const) {
+    const csv = await (await api(`/reports/${type}/csv`, adminToken)).text();
+    assert.match(csv, /Voting links generated,5/, `${type}.csv: links generated`);
+    assert.match(csv, /Links used to vote,5/, `${type}.csv: links used`);
+    assert.match(csv, /Links awaiting use,0/);
+    assert.match(csv, /Links voided \(replaced or revoked\),0/);
+  }
+});

@@ -2,7 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { AppError } from '../../middleware/errorHandler';
 import { writeAuditLog } from '../../lib/audit';
 import { generateVoteReferenceNumber } from '../../lib/voteReference';
-import { getValidToken } from '../voters/voter.service';
+import { getValidToken, lockVoterRow } from '../voters/voter.service';
 import { applyScheduledTransition } from '../../lib/election';
 import { recordVoteInTallies } from '../analytics/analytics.service';
 import type { CastVoteInput, VoteRecordsQuery } from './voting.validation';
@@ -131,6 +131,14 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
       throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
     }
 
+    // Serialise with every link operation for this voter, then refuse if they have ALREADY voted on any link
+    // (covers stale/duplicate links minted before this guard existed). One voter, one ballot.
+    await lockVoterRow(tx, token.voterId);
+    const alreadyVoted = await tx.votingToken.findFirst({ where: { voterId: token.voterId, status: 'CONSUMED' }, select: { id: true } });
+    if (alreadyVoted) {
+      throw new AppError('This voter has already voted. This voting link is no longer valid.', 410);
+    }
+
     const claimed = await tx.votingToken.updateMany({
       where: { id: token.id, status: 'ISSUED' },
       data: { status: 'CONSUMED', consumedAt: castAt },
@@ -138,6 +146,11 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
     if (claimed.count === 0) {
       throw new AppError('This voting link has already been used.', 410);
     }
+    // Any other outstanding link for this voter is now void.
+    await tx.votingToken.updateMany({
+      where: { voterId: token.voterId, status: 'ISSUED', id: { not: token.id } },
+      data: { status: 'REVOKED', revokedAt: castAt },
+    });
 
     if (voteRows.length > 0) {
       await tx.vote.createMany({ data: voteRows });
