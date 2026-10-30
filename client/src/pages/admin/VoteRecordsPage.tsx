@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, DataTable, Field, Icon, type DataTableColumn } from '../../components/ui';
+import { Badge, DataTable, Field, Icon, Pagination, type DataTableColumn } from '../../components/ui';
 import { useVoteRecords } from '../../features/voteRecords/useVoteRecords';
 import { useAuth } from '../../features/auth/AuthContext';
 import type { VoteRecord } from '../../features/voteRecords/types';
@@ -17,7 +17,7 @@ export function VoteRecordsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const isAuthorized = Boolean(user && AUTHORIZED_ROLES.includes(user.role));
-  const { data, isLoading } = useVoteRecords(
+  const { data, isLoading, isError, error, refetch } = useVoteRecords(
     { search: search || undefined, page, pageSize: PAGE_SIZE },
     { enabled: isAuthorized }
   );
@@ -65,7 +65,7 @@ export function VoteRecordsPage() {
   return (
     <>
       <section className="border-b border-outline-variant pb-6">
-        <h1 className="text-headline-xl font-headline-xl uppercase">Individual Vote Records</h1>
+        <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Individual Vote Records</h1>
         <p className="text-body-lg text-secondary">Election administration and verification only.</p>
       </section>
 
@@ -96,29 +96,18 @@ export function VoteRecordsPage() {
           columns={columns}
           rows={data?.records ?? []}
           rowKey={(r) => r.id}
-          emptyMessage={isLoading ? 'Loading vote records…' : 'No vote records match your search.'}
+          label="Individual vote records"
+          emptyMessage="No vote records match your search."
+          isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => refetch()}
         />
-        <div className="flex justify-between items-center px-4 py-4 bg-surface-container-lowest border-t border-outline-variant">
-          <p className="text-label-md font-label-md text-secondary">
-            {total === 0 ? 'No records' : `Page ${page} of ${totalPages} — ${total} records`}
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <Icon name="chevron_left" size={18} />
-            </button>
-            <button
-              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              <Icon name="chevron_right" size={18} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          summary={total === 0 ? 'No records' : `Page ${page} of ${totalPages} — ${total} records`}
+          onPageChange={setPage}
+        />
       </section>
     </>
   );

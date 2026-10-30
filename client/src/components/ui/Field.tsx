@@ -39,7 +39,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           className={cn(
             'w-full px-4 py-3 bg-surface border rounded-lg text-body-lg',
             'focus:outline-none focus:ring-2 focus:ring-primary-container/40 focus:border-primary transition-colors',
-            'placeholder:text-on-surface-variant/50',
+            'placeholder:text-on-surface-variant/70',
             icon && 'pl-10',
             isPassword && 'pr-10',
             error ? 'border-error' : 'border-outline-variant',

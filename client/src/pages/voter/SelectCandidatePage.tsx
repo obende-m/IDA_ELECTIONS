@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Icon } from '../../components/ui';
+import { Button, Icon, useToast } from '../../components/ui';
 import { MobileTopBar } from '../../components/voter/MobileTopBar';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
 import { cn } from '../../lib/cn';
@@ -10,6 +10,7 @@ import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 export function SelectCandidatePage() {
   const { positionId } = useParams<{ positionId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { session, ballot, selections, setSelection } = useVotingSession();
 
   const positionIndex = ballot?.positions.findIndex((p) => p.id === positionId) ?? -1;
@@ -20,6 +21,11 @@ export function SelectCandidatePage() {
   useEffect(() => {
     setCurrent(positionId ? selections[positionId] ?? [] : []);
   }, [positionId, selections]);
+
+  // Each position is a new "screen": start at the top rather than keeping the previous scroll offset.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [positionId]);
 
   if (!session || !ballot) {
     return <VotingLinkRequiredNotice />;
@@ -46,7 +52,10 @@ export function SelectCandidatePage() {
       return;
     }
     if (isMultiSelect) {
-      if (current.length >= position.maxSelections) return;
+      if (current.length >= position.maxSelections) {
+        toast({ title: 'Selection limit reached', description: `You can select up to ${position.maxSelections} candidates for this position. Deselect one to choose another.` });
+        return;
+      }
       setCurrent([...current, candidateId]);
     } else {
       setCurrent([candidateId]);
@@ -70,7 +79,7 @@ export function SelectCandidatePage() {
     <>
       <MobileTopBar title="IDA Election Portal" />
 
-      <main className="mt-16 mb-24 px-6 py-8 flex-grow max-w-lg mx-auto w-full">
+      <main className="mt-16 mb-24 px-4 sm:px-6 py-8 flex-grow max-w-lg mx-auto w-full">
         <div className="mb-8">
           <div className="flex justify-between items-end mb-2">
             <div>
@@ -94,12 +103,12 @@ export function SelectCandidatePage() {
           <div className="bg-primary-container px-3 py-1 rounded-full flex items-center gap-1">
             <Icon name="verified_user" filled size={16} />
             <span className="font-label-sm text-label-sm uppercase tracking-widest text-on-primary-container font-bold">
-              Secure Voting Protocol Active
+              Secure connection
             </span>
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6" role="group" aria-label={`Candidates for ${position.title}`}>
           {position.candidates.map((candidate) => {
             const isSelected = current.includes(candidate.id);
             return (
@@ -123,8 +132,11 @@ export function SelectCandidatePage() {
                   {candidate.bio && <p className="font-body-md text-body-md text-secondary mb-4">{candidate.bio}</p>}
                   <div className="flex items-center justify-end">
                     <button
+                      type="button"
+                      aria-pressed={isSelected}
+                      aria-label={`${isSelected ? 'Deselect' : 'Select'} ${candidate.name} for ${position.title}`}
                       className={cn(
-                        'px-8 py-3 rounded-lg font-label-md text-label-md uppercase tracking-wider transition-all',
+                        'min-h-12 px-8 py-3 rounded-lg font-label-md text-label-md uppercase tracking-wider transition-all',
                         isSelected
                           ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
                           : 'bg-on-background text-on-primary group-hover:bg-primary-container group-hover:text-on-primary-container'
@@ -151,7 +163,10 @@ export function SelectCandidatePage() {
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant shadow-[0_-2px_8px_rgba(28,27,27,0.06)] px-6 py-4 flex gap-4 z-50">
+      <nav
+        aria-label="Ballot navigation"
+        className="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant shadow-[0_-2px_8px_rgba(28,27,27,0.06)] px-4 sm:px-6 py-4 flex gap-3 sm:gap-4 z-50"
+      >
         <Button variant="secondary" uppercase className="flex-1" leftIcon="chevron_left" onClick={() => goToPosition(positionIndex - 1)}>
           Previous
         </Button>
@@ -161,8 +176,8 @@ export function SelectCandidatePage() {
       </nav>
 
       <footer className="mb-28 text-center px-margin-mobile pt-8">
-        <p className="font-label-sm text-label-sm text-secondary opacity-60">
-          © 2026 Igarra Development Association (IDA).
+        <p className="font-label-sm text-label-sm text-secondary">
+          © {new Date().getFullYear()} Igarra Development Association (IDA).
           <br />
           Secure Electronic Voting System.
         </p>

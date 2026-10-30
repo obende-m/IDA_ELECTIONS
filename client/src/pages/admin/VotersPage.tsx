@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, DataTable, Field, Icon, SelectField, useToast, type DataTableColumn } from '../../components/ui';
+import { Badge, Button, DataTable, Field, Icon, Pagination, SelectField, useToast, type DataTableColumn } from '../../components/ui';
 import {
   useDeleteVoter,
   useIssueToken,
@@ -42,7 +42,7 @@ export function VotersPage() {
   const [exporting, setExporting] = useState<'voters' | 'links' | null>(null);
 
   const query = { search: search || undefined, status, page, pageSize: PAGE_SIZE };
-  const { data, isLoading } = useVotersList(query);
+  const { data, isLoading, isError, error, refetch } = useVotersList(query);
   const { data: electionData } = useCurrentElection();
   const election = electionData?.election;
   const isLocked = election?.isLocked ?? false;
@@ -53,17 +53,27 @@ export function VotersPage() {
   const revokeToken = useRevokeToken();
   const replaceToken = useReplaceToken();
 
-  const handleToggleActive = async (voter: Voter) => {
-    const nextActive = !voter.isActive;
-    await setActive.mutateAsync({ id: voter.id, isActive: nextActive });
-    toast({
-      title: nextActive ? 'Voter activated' : 'Voter deactivated',
-      description: nextActive
-        ? `${voter.fullName} can now be issued a voting token.`
-        : `${voter.fullName} can no longer be issued a voting token.`,
-      variant: 'success',
-    });
+  /** Runs an admin action and surfaces any failure as an error toast instead of an unhandled rejection. */
+  const attempt = async (failureTitle: string, action: () => Promise<void>) => {
+    try {
+      await action();
+    } catch (err) {
+      toast({ title: failureTitle, description: err instanceof Error ? err.message : undefined, variant: 'error' });
+    }
   };
+
+  const handleToggleActive = (voter: Voter) =>
+    attempt('Could not update voter', async () => {
+      const nextActive = !voter.isActive;
+      await setActive.mutateAsync({ id: voter.id, isActive: nextActive });
+      toast({
+        title: nextActive ? 'Voter activated' : 'Voter deactivated',
+        description: nextActive
+          ? `${voter.fullName} can now be issued a voting token.`
+          : `${voter.fullName} can no longer be issued a voting token.`,
+        variant: 'success',
+      });
+    });
 
   const handleDelete = async (voter: Voter) => {
     if (!window.confirm(`Delete ${voter.fullName}? This cannot be undone.`)) return;
@@ -85,25 +95,28 @@ export function VotersPage() {
     }
   };
 
-  const handleIssue = async (voter: Voter) => {
-    await issueToken.mutateAsync(voter.id);
-    toast({ title: 'Token issued', description: `A voting link is now active for ${voter.fullName}.`, variant: 'success' });
-  };
+  const handleIssue = (voter: Voter) =>
+    attempt('Could not issue token', async () => {
+      await issueToken.mutateAsync(voter.id);
+      toast({ title: 'Token issued', description: `A voting link is now active for ${voter.fullName}.`, variant: 'success' });
+    });
 
-  const handleReplace = async (voter: Voter) => {
-    await replaceToken.mutateAsync(voter.id);
-    toast({ title: 'New token issued', description: `The previous link for ${voter.fullName} was revoked.`, variant: 'success' });
-  };
+  const handleReplace = (voter: Voter) =>
+    attempt('Could not issue a new token', async () => {
+      await replaceToken.mutateAsync(voter.id);
+      toast({ title: 'New token issued', description: `The previous link for ${voter.fullName} was revoked.`, variant: 'success' });
+    });
 
-  const handleRevoke = async (voter: Voter) => {
-    await revokeToken.mutateAsync(voter.id);
-    toast({ title: 'Token revoked', description: `${voter.fullName}'s voting link is no longer valid.`, variant: 'success' });
-  };
+  const handleRevoke = (voter: Voter) =>
+    attempt('Could not revoke token', async () => {
+      await revokeToken.mutateAsync(voter.id);
+      toast({ title: 'Token revoked', description: `${voter.fullName}'s voting link is no longer valid.`, variant: 'success' });
+    });
 
   const handleExportVoters = async () => {
     setExporting('voters');
     try {
-      await votersApi.exportVoters(query);
+      await attempt('Could not export the voter list', () => votersApi.exportVoters(query));
     } finally {
       setExporting(null);
     }
@@ -112,7 +125,7 @@ export function VotersPage() {
   const handleExportLinks = async () => {
     setExporting('links');
     try {
-      await votersApi.exportVotingLinks();
+      await attempt('Could not download voting links', () => votersApi.exportVotingLinks());
     } finally {
       setExporting(null);
     }
@@ -230,7 +243,7 @@ export function VotersPage() {
 
       <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
         <div>
-          <h1 className="text-headline-xl font-headline-xl uppercase">Voters</h1>
+          <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Voters</h1>
           <p className="text-body-lg text-secondary">Manage the voter roll, imports, and voting tokens.</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -281,29 +294,18 @@ export function VotersPage() {
           columns={columns}
           rows={data?.voters ?? []}
           rowKey={(v) => v.id}
-          emptyMessage={isLoading ? 'Loading voters…' : 'No voters match your filters.'}
+          label="Voters"
+          emptyMessage={search || status !== 'all' ? 'No voters match your filters.' : 'No voters yet. Add a voter or import a roll to get started.'}
+          isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => refetch()}
         />
-        <div className="flex justify-between items-center px-4 py-4 bg-surface-container-lowest border-t border-outline-variant">
-          <p className="text-label-md font-label-md text-secondary">
-            {total === 0 ? 'No voters' : `Page ${page} of ${totalPages} — ${total} voters`}
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <Icon name="chevron_left" size={18} />
-            </button>
-            <button
-              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              <Icon name="chevron_right" size={18} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          summary={total === 0 ? 'No voters' : `Page ${page} of ${totalPages} — ${total} voters`}
+          onPageChange={setPage}
+        />
       </section>
 
       <VoterFormModal

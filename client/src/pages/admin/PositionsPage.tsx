@@ -8,7 +8,7 @@ import type { Position } from '../../features/positions/types';
 
 export function PositionsPage() {
   const { toast } = useToast();
-  const { data, isLoading } = usePositionsList();
+  const { data, isLoading, isError, error, refetch } = usePositionsList();
   const { data: electionData } = useCurrentElection();
   const election = electionData?.election;
   const isLocked = election?.isLocked ?? false;
@@ -87,7 +87,7 @@ export function PositionsPage() {
 
       <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
         <div>
-          <h1 className="text-headline-xl font-headline-xl uppercase">Positions</h1>
+          <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Positions</h1>
           <p className="text-body-lg text-secondary">Configure ballot positions, display order, and max selections.</p>
         </div>
         <Button variant="primary" leftIcon="add" disabled={isLocked} onClick={() => setFormPosition(null)}>
@@ -100,7 +100,11 @@ export function PositionsPage() {
           columns={columns}
           rows={data?.positions ?? []}
           rowKey={(p) => p.id}
-          emptyMessage={isLoading ? 'Loading positions…' : 'No positions yet. Add one to start building the ballot.'}
+          label="Positions"
+          emptyMessage="No positions yet. Add one to start building the ballot."
+          isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => refetch()}
         />
       </section>
 

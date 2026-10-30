@@ -170,3 +170,54 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Keyboard focus: visible ring for every interactive element that doesn't draw its own (inputs use .focus:ring). */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #735c00;
+  outline-offset: 2px;
+}
+/* On dark surfaces the dark ring is invisible: use the gold accent instead. */
+.focus-ring-light:focus-visible {
+  outline-color: #e9c349;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Printing: only elements inside .print-receipt are shown (used by the voter's "Print Receipt" button). */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible !important;
+  }
+  .print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 24px !important;
+    box-shadow: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

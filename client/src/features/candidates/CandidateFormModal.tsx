@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Field, Icon, Modal, SelectField } from '../../components/ui';
+import { Button, Field, Icon, Modal, SelectField, FormError } from '../../components/ui';
 import { usePositionsList } from '../../features/positions/usePositions';
 import { cn } from '../../lib/cn';
 import { useCreateCandidate, useRemoveCandidatePhoto, useUpdateCandidate, useUploadCandidatePhoto } from './useCandidates';
@@ -41,6 +41,7 @@ export function CandidateFormModal({ open, onClose, candidate, defaultPositionId
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -87,7 +88,11 @@ export function CandidateFormModal({ open, onClose, candidate, defaultPositionId
     setPhotoFile(file);
   };
 
-  const onSubmit = async (data: CandidateFormData) => {
+  useEffect(() => {
+    if (open) setSubmitError(null);
+  }, [open]);
+
+  const submit = async (data: CandidateFormData) => {
     let candidateId: string;
     if (isEditing && candidate) {
       await updateCandidate.mutateAsync({ id: candidate.id, data });
@@ -107,6 +112,15 @@ export function CandidateFormModal({ open, onClose, candidate, defaultPositionId
     onClose();
   };
 
+  const onSubmit = async (data: Parameters<typeof submit>[0]) => {
+    setSubmitError(null);
+    try {
+      await submit(data);
+    } catch (err) {
+      setSubmitError(err instanceof Error && err.message ? err.message : 'Something went wrong. Please try again.');
+    }
+  };
+
   return (
     <Modal open={open} onClose={onClose} title={isEditing ? 'Edit Candidate' : 'Add Candidate'}>
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -122,7 +136,7 @@ export function CandidateFormModal({ open, onClose, candidate, defaultPositionId
         <Field label="Manifesto / Bio" error={errors.bio?.message} {...register('bio')} />
 
         <div className="space-y-2">
-          <label className="block text-label-md font-label-md text-on-background uppercase">Ballot Photo</label>
+          <label htmlFor="candidate-photo-input" className="block text-label-md font-label-md text-on-background uppercase">Ballot Photo</label>
           {previewUrl ? (
             <div className="relative w-full h-48 rounded-lg border border-outline-variant shadow-sm overflow-hidden group">
               <img src={previewUrl} alt="Candidate preview" className="w-full h-full object-cover" />
@@ -133,7 +147,7 @@ export function CandidateFormModal({ open, onClose, candidate, defaultPositionId
                   setRemoveRequested(true);
                   if (fileInputRef.current) fileInputRef.current.value = '';
                 }}
-                className="absolute top-2 right-2 rounded-full bg-on-background text-on-primary p-2 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 rounded-full bg-on-background text-on-primary p-3 shadow-sm sm:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                 aria-label="Remove photo"
               >
                 <Icon name="close" size={18} />
@@ -152,6 +166,15 @@ export function CandidateFormModal({ open, onClose, candidate, defaultPositionId
                 const file = e.dataTransfer.files?.[0];
                 if (file) stageFile(file);
               }}
+              role="button"
+              tabIndex={0}
+              aria-label="Choose a ballot photo (JPG, PNG or WEBP, max 5MB)"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               onClick={() => fileInputRef.current?.click()}
               className={cn(
                 'rounded-lg border-2 border-dashed p-8 flex flex-col items-center justify-center gap-2 bg-surface-container-lowest cursor-pointer transition-colors',
@@ -164,6 +187,7 @@ export function CandidateFormModal({ open, onClose, candidate, defaultPositionId
             </div>
           )}
           <input
+            id="candidate-photo-input"
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -176,7 +200,8 @@ export function CandidateFormModal({ open, onClose, candidate, defaultPositionId
           {photoError && <p className="text-label-sm font-label-sm text-error">{photoError}</p>}
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <FormError message={submitError} />
+        <div className="flex flex-wrap justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

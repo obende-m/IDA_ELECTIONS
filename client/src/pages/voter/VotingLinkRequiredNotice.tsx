@@ -13,7 +13,7 @@ export function VotingLinkRequiredNotice() {
         <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
       </header>
 
-      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center">
+      <main className="flex-grow flex flex-col items-center justify-center px-4 sm:px-margin-mobile py-16 text-center">
         <div className="w-24 h-24 rounded-full bg-on-background shadow-sm flex items-center justify-center mb-8">
           <Icon name="link" filled size={44} className="text-primary-container" />
         </div>
@@ -38,8 +38,8 @@ export function VotingLinkRequiredNotice() {
       </main>
 
       <footer className="py-8 px-margin-mobile border-t border-outline-variant text-center">
-        <p className="text-label-sm font-label-sm text-secondary opacity-60">
-          © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
+        <p className="text-label-sm font-label-sm text-secondary">
+          © {new Date().getFullYear()} Igarra Development Association (IDA). Secure Electronic Voting System.
         </p>
       </footer>
     </>

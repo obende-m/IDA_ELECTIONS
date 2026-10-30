@@ -55,11 +55,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       {createPortal(
-        <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-3 w-full max-w-sm">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-[200] flex flex-col gap-3 sm:w-full sm:max-w-sm">
           {items.map((item) => (
             <div
               key={item.id}
-              role="status"
+              role={item.variant === 'error' ? 'alert' : 'status'}
               className={cn('bg-surface border rounded-lg px-4 py-3 flex items-start gap-3 shadow-lg', VARIANT_CLASSES[item.variant ?? 'default'])}
             >
               <Icon name={VARIANT_ICON[item.variant ?? 'default']} filled />
@@ -67,7 +67,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <p className="text-label-md font-label-md font-bold uppercase">{item.title}</p>
                 {item.description && <p className="text-body-md text-secondary mt-1">{item.description}</p>}
               </div>
-              <button onClick={() => dismiss(item.id)} aria-label="Dismiss notification" className="text-secondary hover:text-on-background">
+              <button type="button" onClick={() => dismiss(item.id)} aria-label="Dismiss notification" className="shrink-0 -m-2 p-2 text-secondary hover:text-on-background">
                 <Icon name="close" size={18} />
               </button>
             </div>

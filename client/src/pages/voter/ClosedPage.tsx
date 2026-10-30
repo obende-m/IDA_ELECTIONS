@@ -24,7 +24,7 @@ export function ClosedPage() {
         <span className="text-headline-sm font-headline-sm font-bold text-primary">IDA Election Portal</span>
       </header>
 
-      <main className="flex-grow flex flex-col items-center justify-center px-margin-mobile py-16 text-center">
+      <main className="flex-grow flex flex-col items-center justify-center px-4 sm:px-margin-mobile py-16 text-center">
         <div className="w-24 h-24 rounded-full bg-on-background shadow-sm flex items-center justify-center mb-8">
           <Icon name="lock_clock" filled size={44} className="text-primary-container" />
         </div>
@@ -37,7 +37,7 @@ export function ClosedPage() {
         <h1 className="text-headline-lg font-headline-lg uppercase mb-3">Voting Is Unavailable</h1>
         <p className="text-body-lg text-secondary max-w-sm">
           {reason ??
-            'The polling window for the 2026 General Election has closed. Thank you to everyone who participated. Official results will be published by the Electoral Committee once certified.'}
+            'The polling window for this election is closed. Thank you to everyone who participated. Official results will be published by the Electoral Committee once certified.'}
         </p>
 
         <div className="mt-10 p-4 rounded-r-lg border-l-4 border-primary bg-primary-container/10 max-w-sm text-left">
@@ -49,8 +49,8 @@ export function ClosedPage() {
       </main>
 
       <footer className="py-8 px-margin-mobile border-t border-outline-variant text-center">
-        <p className="text-label-sm font-label-sm text-secondary opacity-60">
-          © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
+        <p className="text-label-sm font-label-sm text-secondary">
+          © {new Date().getFullYear()} Igarra Development Association (IDA). Secure Electronic Voting System.
         </p>
       </footer>
     </>

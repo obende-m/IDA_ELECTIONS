@@ -15,7 +15,7 @@ export function CandidatesPage() {
   const [formCandidate, setFormCandidate] = useState<Candidate | null | undefined>(undefined);
 
   const { data: positionsData } = usePositionsList();
-  const { data: candidatesData, isLoading } = useCandidatesList(positionFilter === 'all' ? undefined : positionFilter);
+  const { data: candidatesData, isLoading, isError, error, refetch } = useCandidatesList(positionFilter === 'all' ? undefined : positionFilter);
   const { data: electionData } = useCurrentElection();
   const election = electionData?.election;
   const isLocked = election?.isLocked ?? false;
@@ -98,7 +98,7 @@ export function CandidatesPage() {
 
       <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
         <div>
-          <h1 className="text-headline-xl font-headline-xl uppercase">Candidate Management</h1>
+          <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Candidate Management</h1>
           <p className="text-body-lg text-secondary">Oversee official ballot entries for {election?.title ?? 'the current election'}.</p>
         </div>
         <Button
@@ -141,7 +141,11 @@ export function CandidatesPage() {
           columns={columns}
           rows={candidates}
           rowKey={(row) => row.id}
-          emptyMessage={isLoading ? 'Loading candidates…' : 'No candidates yet.'}
+          label="Candidates"
+          emptyMessage={search.trim() || positionFilter !== 'all' ? 'No candidates match your filters.' : 'No candidates yet. Use Add Candidate to create the first one.'}
+          isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => refetch()}
         />
         {candidates.length > 0 && (
           <div className="flex justify-between items-center px-4 py-4 bg-surface-container-lowest border-t border-outline-variant">

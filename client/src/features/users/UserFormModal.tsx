@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Field, Modal, SelectField } from '../../components/ui';
+import { Button, Field, Modal, SelectField, FormError } from '../../components/ui';
 import { useCreateUser } from './useUsers';
 
 const userSchema = z.object({
@@ -24,6 +24,7 @@ export interface UserFormModalProps {
 export function UserFormModal({ open, onClose, onSuccess }: UserFormModalProps) {
   const createUser = useCreateUser();
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -35,10 +36,23 @@ export function UserFormModal({ open, onClose, onSuccess }: UserFormModalProps) 
     if (open) reset({ email: '', fullName: '', role: 'ADMIN', password: '' });
   }, [open, reset]);
 
-  const onSubmit = async (data: UserFormData) => {
+  useEffect(() => {
+    if (open) setSubmitError(null);
+  }, [open]);
+
+  const submit = async (data: UserFormData) => {
     await createUser.mutateAsync(data);
     onSuccess(`${data.fullName}'s account was created.`);
     onClose();
+  };
+
+  const onSubmit = async (data: Parameters<typeof submit>[0]) => {
+    setSubmitError(null);
+    try {
+      await submit(data);
+    } catch (err) {
+      setSubmitError(err instanceof Error && err.message ? err.message : 'Something went wrong. Please try again.');
+    }
   };
 
   return (
@@ -57,7 +71,8 @@ export function UserFormModal({ open, onClose, onSuccess }: UserFormModalProps) 
           error={errors.password?.message}
           {...register('password')}
         />
-        <div className="flex justify-end gap-3 pt-2">
+        <FormError message={submitError} />
+        <div className="flex flex-wrap justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

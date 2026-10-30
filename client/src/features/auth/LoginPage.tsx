@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Button, Field, Icon } from '../../components/ui';
 import { ApiError } from '../../lib/apiClient';
+import { useSlowHint } from '../../lib/useSlowHint';
 import { useAuth } from './AuthContext';
 
 const loginSchema = z.object({
@@ -30,6 +31,7 @@ export function LoginPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
+  const slow = useSlowHint(isSubmitting, 8000);
 
   const onSubmit = async (values: LoginFormValues) => {
     setServerError(null);
@@ -84,6 +86,12 @@ export function LoginPage() {
                 {...register('password')}
               />
 
+              {isSubmitting && slow && (
+                <p role="status" className="text-label-md font-label-md text-secondary">
+                  Waking up the server, this can take up to a minute…
+                </p>
+              )}
+
               {serverError && (
                 <p role="alert" className="text-label-md font-label-md text-error">
                   {serverError}
@@ -97,16 +105,16 @@ export function LoginPage() {
           </div>
 
           <div className="text-center">
-            <a className="text-label-md font-label-md text-primary hover:underline" href="#">
-              Forgot your password?
-            </a>
+            <p className="text-label-md font-label-md text-secondary">
+              Forgot your password? Ask a Super Admin to reset it for you.
+            </p>
           </div>
         </div>
       </main>
 
       <footer className="py-6 text-center border-t border-outline-variant">
-        <p className="text-label-sm font-label-sm text-secondary opacity-60">
-          © 2026 Igarra Development Association (IDA). Secure Electronic Voting System.
+        <p className="text-label-sm font-label-sm text-secondary">
+          © {new Date().getFullYear()} Igarra Development Association (IDA). Secure Electronic Voting System.
         </p>
       </footer>
     </div>

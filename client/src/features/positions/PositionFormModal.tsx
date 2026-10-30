@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Field, Modal } from '../../components/ui';
+import { Button, Field, Modal, FormError } from '../../components/ui';
 import { useCreatePosition, useUpdatePosition } from './usePositions';
 import type { Position } from './types';
 
@@ -26,6 +26,7 @@ export function PositionFormModal({ open, onClose, position, onSuccess }: Positi
   const createPosition = useCreatePosition();
   const updatePosition = useUpdatePosition();
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -43,7 +44,11 @@ export function PositionFormModal({ open, onClose, position, onSuccess }: Positi
     }
   }, [open, position, reset]);
 
-  const onSubmit = async (data: PositionFormData) => {
+  useEffect(() => {
+    if (open) setSubmitError(null);
+  }, [open]);
+
+  const submit = async (data: PositionFormData) => {
     if (isEditing && position) {
       await updatePosition.mutateAsync({ id: position.id, data });
       onSuccess('Position updated.');
@@ -52,6 +57,15 @@ export function PositionFormModal({ open, onClose, position, onSuccess }: Positi
       onSuccess('Position added.');
     }
     onClose();
+  };
+
+  const onSubmit = async (data: Parameters<typeof submit>[0]) => {
+    setSubmitError(null);
+    try {
+      await submit(data);
+    } catch (err) {
+      setSubmitError(err instanceof Error && err.message ? err.message : 'Something went wrong. Please try again.');
+    }
   };
 
   return (
@@ -67,7 +81,8 @@ export function PositionFormModal({ open, onClose, position, onSuccess }: Positi
           error={errors.maxSelections?.message}
           {...register('maxSelections')}
         />
-        <div className="flex justify-end gap-3 pt-2">
+        <FormError message={submitError} />
+        <div className="flex flex-wrap justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

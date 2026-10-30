@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, DataTable, Field, Icon, SelectField, type DataTableColumn } from '../../components/ui';
+import { Badge, DataTable, Field, Icon, Pagination, SelectField, type DataTableColumn } from '../../components/ui';
 import { useAuditActions, useAuditLog } from '../../features/audit/useAudit';
 import type { AuditLogEntry } from '../../features/audit/types';
 
@@ -18,7 +18,7 @@ export function AuditPage() {
   const [page, setPage] = useState(1);
 
   const { data: actionsData } = useAuditActions();
-  const { data, isLoading } = useAuditLog({
+  const { data, isLoading, isError, error, refetch } = useAuditLog({
     search: search || undefined,
     action: action || undefined,
     from: from || undefined,
@@ -42,7 +42,7 @@ export function AuditPage() {
   return (
     <>
       <section className="border-b border-outline-variant pb-6">
-        <h1 className="text-headline-xl font-headline-xl uppercase">Audit Logs</h1>
+        <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Audit Logs</h1>
         <p className="text-body-lg text-secondary">Searchable trail of every security-relevant system action.</p>
       </section>
 
@@ -113,29 +113,18 @@ export function AuditPage() {
           columns={columns}
           rows={data?.entries ?? []}
           rowKey={(r) => r.id}
-          emptyMessage={isLoading ? 'Loading audit log…' : 'No audit entries match your filters.'}
+          label="Audit log"
+          emptyMessage="No audit entries match your filters."
+          isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => refetch()}
         />
-        <div className="flex justify-between items-center px-4 py-4 bg-surface-container-lowest border-t border-outline-variant">
-          <p className="text-label-md font-label-md text-secondary">
-            {total === 0 ? 'No entries' : `Page ${page} of ${totalPages} — ${total} entries`}
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <Icon name="chevron_left" size={18} />
-            </button>
-            <button
-              className="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              <Icon name="chevron_right" size={18} />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          summary={total === 0 ? 'No entries' : `Page ${page} of ${totalPages} — ${total} entries`}
+          onPageChange={setPage}
+        />
       </section>
     </>
   );

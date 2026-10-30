@@ -5,6 +5,7 @@ import { MobileTopBar } from '../../components/voter/MobileTopBar';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
 import { votingApi } from '../../features/voting/votingApi';
 import { ApiError } from '../../lib/apiClient';
+import { useSlowHint } from '../../lib/useSlowHint';
 import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 
 /** Ported from review_confirm_vote_mobile/code.html; submits the accumulated selections via the atomic vote-cast transaction. */
@@ -13,6 +14,7 @@ export function ReviewPage() {
   const { toast } = useToast();
   const { session, ballot, selections, setReferenceNumber, clearSession } = useVotingSession();
   const [submitting, setSubmitting] = useState(false);
+  const slow = useSlowHint(submitting, 8000);
 
   if (!session || !ballot) {
     return <VotingLinkRequiredNotice />;
@@ -25,8 +27,16 @@ export function ReviewPage() {
       setReferenceNumber(result.referenceNumber);
       navigate('/vote/success');
     } catch (err) {
+      const isNetwork = err instanceof ApiError && err.status === 0;
       const message = err instanceof ApiError ? err.message : 'Please try again in a moment.';
-      toast({ title: 'Could not cast your vote', description: message, variant: 'error' });
+      toast({
+        title: isNetwork ? 'Connection problem' : 'Could not cast your vote',
+        description: isNetwork
+          ? `${message} Your selections are saved on this device. Tap "Cast My Vote" again once you are back online; if your vote was already recorded you will be told.`
+          : message,
+        variant: 'error',
+        durationMs: isNetwork ? 10000 : undefined,
+      });
       if (err instanceof ApiError && (err.status === 409 || err.status === 423)) {
         clearSession();
         navigate('/vote/closed', { state: { reason: err.message } });
@@ -43,7 +53,7 @@ export function ReviewPage() {
     <>
       <MobileTopBar title="IDA Election Portal" />
 
-      <main className="mt-16 mb-8 px-6 py-8 flex-grow max-w-lg mx-auto w-full flex flex-col items-center">
+      <main className="mt-16 mb-8 px-4 sm:px-6 py-8 flex-grow max-w-lg mx-auto w-full flex flex-col items-center">
         <div className="w-16 h-16 rounded-full border-2 border-primary flex items-center justify-center mb-4">
           <Icon name="shield" filled size={28} className="text-primary" />
         </div>
@@ -52,7 +62,7 @@ export function ReviewPage() {
 
         <div className="w-full flex items-center gap-2 bg-surface-container px-4 py-2 rounded-lg border-t-2 border-primary-container mb-6">
           <Icon name="shield" filled size={18} className="text-primary" />
-          <span className="text-label-md font-label-md uppercase tracking-widest text-secondary">Secure Session Encrypted</span>
+          <span className="text-label-md font-label-md uppercase tracking-widest text-secondary">Secure connection (HTTPS)</span>
         </div>
 
         <div className="w-full space-y-3">
@@ -71,7 +81,7 @@ export function ReviewPage() {
                   </p>
                 </div>
                 <button
-                  className="w-8 h-8 rounded-lg flex items-center justify-center border border-primary-container text-primary hover:bg-primary-container/10 transition-colors"
+                  className="w-11 h-11 shrink-0 rounded-lg flex items-center justify-center border border-primary-container text-primary hover:bg-primary-container/10 transition-colors"
                   aria-label={`Edit ${position.title} selection`}
                   onClick={() => navigate(`/vote/select/${position.id}`)}
                 >
@@ -91,15 +101,20 @@ export function ReviewPage() {
         </div>
 
         <div className="w-full mt-8 space-y-3">
-          <Button variant="gold" size="lg" fullWidth uppercase leftIcon="shield" loading={submitting} onClick={handleCastVote}>
+          <Button variant="gold" size="lg" fullWidth uppercase className="min-h-14" leftIcon="shield" loading={submitting} onClick={handleCastVote}>
             Cast My Vote
           </Button>
-          <Button variant="secondary" size="lg" fullWidth uppercase onClick={() => navigate(-1)}>
+          {submitting && slow && (
+            <p role="status" className="text-center text-body-md text-secondary">
+              Waking up the server, this can take up to a minute. Please do not close or refresh this page.
+            </p>
+          )}
+          <Button variant="secondary" size="lg" fullWidth uppercase className="min-h-14" disabled={submitting} onClick={() => navigate(-1)}>
             Back to Selection
           </Button>
         </div>
 
-        <p className="text-label-sm font-label-sm text-secondary opacity-60 mt-8">© 2026 Igarra Development Association (IDA)</p>
+        <p className="text-label-sm font-label-sm text-secondary mt-8">© {new Date().getFullYear()} Igarra Development Association (IDA)</p>
       </main>
     </>
   );

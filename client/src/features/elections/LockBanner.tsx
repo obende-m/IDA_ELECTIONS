@@ -30,9 +30,9 @@ export function LockBanner({ election }: LockBannerProps) {
     <>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-on-background text-on-primary border border-error rounded-xl shadow-sm px-6 py-4">
         <div className="flex items-start gap-3">
-          <Icon name="lock" filled className="text-error shrink-0" />
+          <Icon name="lock" filled className="text-error-container shrink-0" />
           <div>
-            <p className="text-label-md font-label-md uppercase tracking-widest text-error">Election Locked</p>
+            <p className="text-label-md font-label-md uppercase tracking-widest text-error-container">Election Locked</p>
             <p className="text-body-md text-secondary-fixed">
               No votes, tokens, voter records, candidates, or election settings can be changed
               {election.lockedBy ? ` — locked by ${election.lockedBy.fullName}` : ''}

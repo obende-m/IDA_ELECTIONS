@@ -1,10 +1,18 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
+export const NETWORK_ERROR_MESSAGE =
+  'We could not reach the server. Please check your internet connection and try again. If the server was idle it can take up to a minute to wake up.';
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
     super(message);
     this.status = status;
+  }
+
+  /** True for failures worth retrying: no response at all (status 0) or a 5xx/gateway error. */
+  get retryable(): boolean {
+    return this.status === 0 || this.status >= 500;
   }
 }
 
@@ -24,9 +32,28 @@ interface RequestOptions {
   body?: unknown;
 }
 
+/** fetch() that turns a network failure (offline, DNS, server asleep, CORS) into a friendly ApiError with status 0. */
+async function safeFetch(input: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch {
+    throw new ApiError(NETWORK_ERROR_MESSAGE, 0);
+  }
+}
+
+/** Error payloads aren't always JSON (e.g. a proxy's 502/504 HTML page while the backend wakes up). */
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+  const payload = await res.json().catch(() => null);
+  if (payload && typeof payload.message === 'string' && payload.message) return payload.message;
+  if (res.status === 502 || res.status === 503 || res.status === 504) {
+    return 'The server is starting up or temporarily unavailable. Please try again in a moment.';
+  }
+  return res.statusText || fallback;
+}
+
 /** Thin fetch wrapper: injects the bearer token, sends cookies for the refresh flow, and normalizes errors. */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await safeFetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? 'GET',
     credentials: 'include',
     headers: {
@@ -41,8 +68,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   if (!res.ok) {
-    const payload = await res.json().catch(() => ({ message: res.statusText }));
-    throw new ApiError(payload.message ?? 'Request failed', res.status);
+    throw new ApiError(await readErrorMessage(res, 'Request failed'), res.status);
   }
 
   if (res.status === 204) return undefined as T;
@@ -51,7 +77,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
 /** Triggers a browser download for a CSV (or other file) endpoint, e.g. voter/voting-link exports. */
 export async function apiDownload(path: string, filename: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await safeFetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
   });
@@ -60,8 +86,7 @@ export async function apiDownload(path: string, filename: string): Promise<void>
     onUnauthorized?.();
   }
   if (!res.ok) {
-    const payload = await res.json().catch(() => ({ message: res.statusText }));
-    throw new ApiError(payload.message ?? 'Download failed', res.status);
+    throw new ApiError(await readErrorMessage(res, 'Download failed'), res.status);
   }
 
   const blob = await res.blob();
@@ -77,7 +102,7 @@ export async function apiDownload(path: string, filename: string): Promise<void>
 
 /** Multipart upload (e.g. CSV/XLSX voter import) — omits the JSON content-type so the browser sets the multipart boundary. */
 export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await safeFetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     credentials: 'include',
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
@@ -89,8 +114,7 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
   }
 
   if (!res.ok) {
-    const payload = await res.json().catch(() => ({ message: res.statusText }));
-    throw new ApiError(payload.message ?? 'Upload failed', res.status);
+    throw new ApiError(await readErrorMessage(res, 'Upload failed'), res.status);
   }
 
   return res.json() as Promise<T>;

@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Field, Modal } from '../../components/ui';
+import { Button, Field, Modal, FormError } from '../../components/ui';
 import { useCreateVoter, useUpdateVoter } from './useVoters';
 import type { Voter } from './types';
 
@@ -28,6 +28,7 @@ export function VoterFormModal({ open, onClose, voter, onSuccess }: VoterFormMod
   const createVoter = useCreateVoter();
   const updateVoter = useUpdateVoter();
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -47,7 +48,11 @@ export function VoterFormModal({ open, onClose, voter, onSuccess }: VoterFormMod
     }
   }, [open, voter, reset]);
 
-  const onSubmit = async (data: VoterFormData) => {
+  useEffect(() => {
+    if (open) setSubmitError(null);
+  }, [open]);
+
+  const submit = async (data: VoterFormData) => {
     if (isEditing && voter) {
       await updateVoter.mutateAsync({ id: voter.id, data });
       onSuccess('Voter details updated.');
@@ -58,6 +63,15 @@ export function VoterFormModal({ open, onClose, voter, onSuccess }: VoterFormMod
     onClose();
   };
 
+  const onSubmit = async (data: Parameters<typeof submit>[0]) => {
+    setSubmitError(null);
+    try {
+      await submit(data);
+    } catch (err) {
+      setSubmitError(err instanceof Error && err.message ? err.message : 'Something went wrong. Please try again.');
+    }
+  };
+
   return (
     <Modal open={open} onClose={onClose} title={isEditing ? 'Edit Voter' : 'Add Voter'}>
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -66,7 +80,8 @@ export function VoterFormModal({ open, onClose, voter, onSuccess }: VoterFormMod
         <Field label="Email Address" type="email" error={errors.email?.message} {...register('email')} />
         <Field label="Phone Number" error={errors.phone?.message} {...register('phone')} />
         <Field label="Ward" error={errors.ward?.message} {...register('ward')} />
-        <div className="flex justify-end gap-3 pt-2">
+        <FormError message={submitError} />
+        <div className="flex flex-wrap justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

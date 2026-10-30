@@ -18,7 +18,7 @@ export function UsersPage() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const isAuthorized = currentUser?.role === 'SUPER_ADMIN';
-  const { data, isLoading } = useUsersList();
+  const { data, isLoading, isError, error, refetch } = useUsersList();
   const [formOpen, setFormOpen] = useState(false);
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
 
@@ -120,7 +120,7 @@ export function UsersPage() {
     <>
       <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-6">
         <div>
-          <h1 className="text-headline-xl font-headline-xl uppercase">Admin Accounts</h1>
+          <h1 className="text-headline-lg-mobile md:text-headline-xl font-headline-xl uppercase">Admin Accounts</h1>
           <p className="text-body-lg text-secondary">Create and manage Admin and Election Committee logins.</p>
         </div>
         <Button variant="primary" leftIcon="add" onClick={() => setFormOpen(true)}>
@@ -133,7 +133,11 @@ export function UsersPage() {
           columns={columns}
           rows={data?.users ?? []}
           rowKey={(u) => u.id}
-          emptyMessage={isLoading ? 'Loading accounts…' : 'No accounts found.'}
+          label="Admin accounts"
+          emptyMessage="No accounts found."
+          isLoading={isLoading}
+          error={isError ? error : undefined}
+          onRetry={() => refetch()}
         />
       </section>
 

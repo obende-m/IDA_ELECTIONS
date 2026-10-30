@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Button, Icon, Modal } from '../../components/ui';
+import { Button, FormError, Icon, Modal } from '../../components/ui';
 import { useImportVoters } from './useVoters';
 import type { ImportReport } from './types';
 
@@ -21,19 +21,26 @@ const REPORT_ROWS: { key: ReportListKey; label: string; tone: string }[] = [
 export function ImportVotersModal({ open, onClose }: ImportVotersModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const importVoters = useImportVoters();
 
   const handleClose = () => {
     setFile(null);
     setReport(null);
+    setError(null);
     onClose();
   };
 
   const handleImport = async () => {
     if (!file) return;
-    const result = await importVoters.mutateAsync(file);
-    setReport(result.report);
+    setError(null);
+    try {
+      const result = await importVoters.mutateAsync(file);
+      setReport(result.report);
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'The import failed. Please try again.');
+    }
   };
 
   return (
@@ -55,10 +62,12 @@ export function ImportVotersModal({ open, onClose }: ImportVotersModalProps) {
           <input
             ref={fileInput}
             type="file"
-            accept=".csv,.xlsx,.xls"
+            accept=".csv,.xlsx"
             className="hidden"
+            aria-label="Voter file (.csv or .xlsx)"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
+          <FormError message={error} />
           <div className="flex justify-end gap-3">
             <Button type="button" variant="secondary" onClick={handleClose}>
               Cancel
