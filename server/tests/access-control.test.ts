@@ -33,7 +33,16 @@ async function api(path: string, opts: { method?: string; token?: string; body?:
   });
 }
 
+// Tokens are cached per account: the login endpoint is rate-limited (10 / 15 min per IP) by design.
+const tokenCache = new Map<string, string>();
 async function login(email: string): Promise<string> {
+  const cached = tokenCache.get(email);
+  if (cached) return cached;
+  const token = await loginUncached(email);
+  tokenCache.set(email, token);
+  return token;
+}
+async function loginUncached(email: string): Promise<string> {
   const res = await api('/auth/login', { method: 'POST', body: { email, password: PASSWORD } });
   assert.equal(res.status, 200, `login failed for ${email}`);
   return ((await res.json()) as { accessToken: string }).accessToken;
@@ -157,4 +166,15 @@ test('election schedule validation: end must be after start', async () => {
 
 test('readiness endpoint reports database connectivity', async () => {
   assert.equal((await api('/health/ready')).status, 200);
+});
+
+test('the schedule can be cleared (null) and a past end time is refused on an open election', async () => {
+  const committee = await login(emails.ELECTION_COMMITTEE);
+  const cleared = await api('/elections/current', { method: 'PATCH', token: committee, body: { startTime: null, endTime: null } });
+  assert.equal(cleared.status, 200);
+  const body = (await cleared.json()) as { election: { startTime: string | null; endTime: string | null } };
+  assert.equal(body.election.startTime, null);
+  assert.equal(body.election.endTime, null);
+  const empty = await api('/elections/current', { method: 'PATCH', token: committee, body: { startTime: '', endTime: '' } });
+  assert.equal(empty.status, 200);
 });

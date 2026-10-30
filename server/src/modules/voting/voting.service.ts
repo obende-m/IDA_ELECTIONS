@@ -146,7 +146,10 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
     await tx.voter.update({ where: { id: token.voterId }, data: { votingStatus: 'VOTED' } });
 
     await recordVoteInTallies(tx, token.electionId, { candidateIds, abstainedPositionIds, castAt });
-  });
+    // maxWait: when many voters submit at once, wait in the connection queue rather than failing with
+    // "Unable to start a transaction in the given time" (Prisma's default is only 2 s). A failed start
+    // consumes nothing - the token stays valid - but waiting is a far better voter experience.
+  }, { maxWait: 20000, timeout: 20000 });
 
   await writeAuditLog({
     action: 'VOTE_CAST',

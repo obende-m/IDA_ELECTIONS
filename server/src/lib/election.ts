@@ -85,7 +85,7 @@ export async function applyScheduledTransition(election: Election): Promise<Elec
         },
         // Default 5s interactive-transaction timeout is too tight for certifyElectionResults' read
         // fan-out (positions/candidates/activity/audit log) over the network to Supabase's pooler.
-        { timeout: 15000 }
+        { maxWait: 20000, timeout: 15000 }
       );
       await writeAuditLog({
         action: 'ELECTION_CLOSED',
