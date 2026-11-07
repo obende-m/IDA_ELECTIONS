@@ -76,6 +76,67 @@ export async function setUserActive(userId: string, isActive: boolean, actor: Ac
   return updated;
 }
 
+const USER_SELECT = { id: true, email: true, fullName: true, role: true, isActive: true, createdAt: true } as const;
+
+/**
+ * Super Admin moves an Administrator <-> Election Committee. Super Admin accounts are never touched here
+ * (neither promoted to nor demoted from), so the "at least one Super Admin" invariant can't be broken by this route.
+ * The role is re-read from the database on every request, so the change applies on the person's next click.
+ */
+export async function changeUserRole(
+  userId: string,
+  role: 'ADMIN' | 'ELECTION_COMMITTEE',
+  actor: Actor,
+  req?: import('express').Request
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError('Account not found', 404);
+  if (userId === actor.id) throw new AppError('You cannot change your own role.', 409);
+  if (user.role === 'SUPER_ADMIN') throw new AppError('Super Admin accounts cannot be changed here.', 409);
+  if (user.role === role) return prisma.user.findUniqueOrThrow({ where: { id: userId }, select: USER_SELECT });
+
+  const updated = await prisma.user.update({ where: { id: userId }, data: { role }, select: USER_SELECT });
+
+  await writeAuditLog({
+    action: 'ADMIN_USER_ROLE_CHANGED',
+    actorId: actor.id,
+    actorRole: actor.role,
+    actorName: actor.fullName,
+    targetType: 'USER',
+    targetId: userId,
+    metadata: { email: user.email, from: user.role, to: role },
+    req,
+  });
+
+  return updated;
+}
+
+/**
+ * Permanently removes an Administrator / Election Committee account and its sign-in sessions.
+ * History is kept: audit rows carry the person's name and id as text, and records that pointed at the
+ * account (who issued a link, who locked an election) simply lose the pointer.
+ * Super Admin accounts and your own account can never be deleted here.
+ */
+export async function deleteUser(userId: string, actor: Actor, req?: import('express').Request) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError('Account not found', 404);
+  if (userId === actor.id) throw new AppError('You cannot delete your own account.', 409);
+  if (user.role === 'SUPER_ADMIN') throw new AppError('Super Admin accounts cannot be deleted here.', 409);
+
+  await prisma.$transaction([prisma.session.deleteMany({ where: { userId } }), prisma.user.delete({ where: { id: userId } })]);
+
+  await writeAuditLog({
+    action: 'ADMIN_USER_DELETED',
+    actorId: actor.id,
+    actorRole: actor.role,
+    actorName: actor.fullName,
+    targetType: 'USER',
+    targetId: userId,
+    metadata: { email: user.email, fullName: user.fullName, role: user.role },
+    req,
+  });
+}
+
 /** Also invalidates all existing sessions for the account, mirroring auth.service.ts's own resetPassword — forces re-login with the new password. */
 export async function resetUserPassword(userId: string, newPassword: string, actor: Actor, req?: import('express').Request) {
   const user = await prisma.user.findUnique({ where: { id: userId } });

@@ -411,6 +411,31 @@ export async function listAllVotingLinks(electionId: string): Promise<VoterLinkR
   }));
 }
 
+export interface WhatsappQueueRow {
+  id: string;
+  membershipNumber: string;
+  fullName: string;
+  phone: string | null;
+  votingLink: string;
+}
+
+/** Active voters who hold a live (ISSUED) link: what the admin works through when sending links by WhatsApp. */
+export async function listWhatsappQueue(electionId: string): Promise<WhatsappQueueRow[]> {
+  const voters = await prisma.voter.findMany({
+    where: { electionId, isActive: true, votingStatus: 'ISSUED', tokens: { some: { status: 'ISSUED' } } },
+    orderBy: { fullName: 'asc' },
+    include: { tokens: { where: { status: 'ISSUED' }, take: 1 } },
+  });
+
+  return voters.map((voter) => ({
+    id: voter.id,
+    membershipNumber: voter.membershipNumber,
+    fullName: voter.fullName,
+    phone: voter.phone,
+    votingLink: votingLinkFor(decryptToken(voter.tokens[0].tokenEncrypted)),
+  }));
+}
+
 export interface TokenResolution {
   voterId: string;
   fullName: string;

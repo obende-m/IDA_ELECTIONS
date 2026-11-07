@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { ActionMenu, Badge, Button, Card, DataTable, PageHeader, Pagination, SearchInput, Tabs, useConfirm, useToast, type DataTableColumn, type MenuItem } from '../../components/ui';
 import { useDeleteVoter, useIssueToken, useRevokeToken, useReplaceToken, useSetVoterActive, useVotersList } from '../../features/voters/useVoters';
 import { votersApi } from '../../features/voters/votersApi';
-import { buildInviteMessage } from '../../features/voters/inviteMessage';
+import { buildInviteMessage, whatsappUrl } from '../../features/voters/inviteMessage';
+import { WhatsappQueueModal } from '../../features/voters/WhatsappQueueModal';
 import { VoterFormModal } from '../../features/voters/VoterFormModal';
 import { ImportVotersModal } from '../../features/voters/ImportVotersModal';
 import { useCurrentElection } from '../../features/elections/useElection';
@@ -38,6 +39,7 @@ export function VotersPage() {
   const [page, setPage] = useState(1);
   const [formVoter, setFormVoter] = useState<Voter | null | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [exporting, setExporting] = useState<'voters' | 'links' | null>(null);
 
   useEffect(() => setPage(1), [debouncedSearch, tab]);
@@ -91,6 +93,26 @@ export function VotersPage() {
       toast({ title: 'Message copied', description: `Paste it into WhatsApp, SMS or email for ${v.fullName}. Their link is inside.`, variant: 'success' });
     } catch {
       toast({ title: 'Could not copy link', variant: 'error' });
+    }
+  };
+
+  /** Opens WhatsApp on this member's chat with the message and link already typed. */
+  const sendOnWhatsapp = async (v: Voter) => {
+    if (!whatsappUrl(v.phone, '')) {
+      toast({ title: 'No usable phone number', description: `Add ${v.fullName}'s WhatsApp number (Edit details), then try again.`, variant: 'error' });
+      return;
+    }
+    // Open the tab inside the click (browsers block pop-ups opened after a wait), then point it at WhatsApp once the link is fetched.
+    const tab = window.open('', 'ida-whatsapp');
+    try {
+      const { votingLink } = await votersApi.votingLink(v.id);
+      const url = whatsappUrl(v.phone, buildInviteMessage({ fullName: v.fullName, votingLink, electionTitle: election?.title, endTime: election?.endTime }));
+      if (!url) throw new Error('bad number');
+      if (tab) tab.location.href = url;
+      else window.location.assign(url);
+    } catch {
+      tab?.close();
+      toast({ title: 'Could not open WhatsApp', variant: 'error' });
     }
   };
 
@@ -171,6 +193,7 @@ export function VotersPage() {
       render: (v) => {
         const items: MenuItem[] = [
           { label: 'Issue voting link', icon: 'link', hidden: v.votingStatus !== 'NOT_ISSUED', disabled: isLocked || !v.isActive, onSelect: () => issue(v) },
+          { label: 'Send on WhatsApp', icon: 'chat', hidden: v.votingStatus !== 'ISSUED', onSelect: () => sendOnWhatsapp(v) },
           { label: 'Copy message with link', icon: 'content_copy', hidden: v.votingStatus !== 'ISSUED', onSelect: () => copyLink(v) },
           { label: 'Issue new link', icon: 'refresh', hidden: v.votingStatus !== 'ISSUED' && v.votingStatus !== 'REVOKED', disabled: isLocked, onSelect: () => replace(v) },
           { label: 'Edit details', icon: 'edit', disabled: isLocked, onSelect: () => setFormVoter(v) },
@@ -180,6 +203,15 @@ export function VotersPage() {
         ];
         return (
           <div className="flex items-center justify-end gap-1">
+            {v.votingStatus === 'ISSUED' && (
+              <button
+                type="button"
+                onClick={() => sendOnWhatsapp(v)}
+                className="hidden sm:inline-flex h-8 px-2.5 rounded-lg text-[0.8125rem] font-medium text-primary hover:bg-primary-soft items-center gap-1"
+              >
+                WhatsApp
+              </button>
+            )}
             {v.votingStatus === 'ISSUED' && (
               <button
                 type="button"
@@ -218,6 +250,9 @@ export function VotersPage() {
         description="The voter roll for this election, and each member's private voting link."
         actions={
           <>
+            <Button variant="secondary" leftIcon="chat" onClick={() => setWhatsappOpen(true)}>
+              Send on WhatsApp
+            </Button>
             <Button variant="secondary" leftIcon="upload_file" disabled={isLocked} onClick={() => setImportOpen(true)}>
               Import
             </Button>
@@ -275,6 +310,7 @@ export function VotersPage() {
 
       <VoterFormModal open={formVoter !== undefined} voter={formVoter} onClose={() => setFormVoter(undefined)} onSuccess={(m) => toast({ title: m, variant: 'success' })} />
       <ImportVotersModal open={importOpen} onClose={() => setImportOpen(false)} />
+      <WhatsappQueueModal open={whatsappOpen} onClose={() => setWhatsappOpen(false)} electionTitle={election?.title} endTime={election?.endTime} />
     </>
   );
 }

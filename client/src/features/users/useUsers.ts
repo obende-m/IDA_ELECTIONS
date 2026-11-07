@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from './usersApi';
-import type { CreateUserValues } from './types';
+import type { CreatableAdminRole, CreateUserValues } from './types';
 
 const USERS_KEY = 'admin-users';
 
@@ -25,6 +25,19 @@ export function useSetUserActive() {
       isActive ? usersApi.activate(id) : usersApi.deactivate(id),
     onSuccess: invalidate,
   });
+}
+
+export function useChangeUserRole() {
+  const invalidate = useInvalidateUsers();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: CreatableAdminRole }) => usersApi.changeRole(id, role),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteUser() {
+  const invalidate = useInvalidateUsers();
+  return useMutation({ mutationFn: (id: string) => usersApi.remove(id), onSuccess: invalidate });
 }
 
 export function useResetUserPassword() {

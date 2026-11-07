@@ -13,5 +13,10 @@ export const resetUserPasswordSchema = z.object({
   password: z.string().min(12, 'Password must be at least 12 characters long'),
 });
 
+export const changeUserRoleSchema = z.object({
+  role: z.enum(['ADMIN', 'ELECTION_COMMITTEE']),
+});
+
+export type ChangeUserRoleInput = z.infer<typeof changeUserRoleSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type ResetUserPasswordInput = z.infer<typeof resetUserPasswordSchema>;

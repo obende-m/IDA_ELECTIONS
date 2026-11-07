@@ -19,6 +19,7 @@ router.post('/', validateBody(createVoterSchema), asyncHandler(voterController.c
 router.post('/import', uploadSpreadsheet.single('file'), asyncHandler(voterController.importFile));
 router.get('/export', asyncHandler(voterController.exportVotersCsv));
 router.get('/export/links', asyncHandler(voterController.exportVotingLinksCsv));
+router.get('/whatsapp-queue', asyncHandler(voterController.whatsappQueue));
 router.get('/:id', asyncHandler(voterController.getOne));
 router.patch('/:id', validateBody(updateVoterSchema), asyncHandler(voterController.update));
 // Only succeeds while the voter has never had a token issued — see voter.service.ts's deleteVoter.

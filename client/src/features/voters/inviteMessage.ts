@@ -5,6 +5,35 @@ interface InviteDetails {
   endTime?: string | null;
 }
 
+const DEFAULT_COUNTRY_CODE = (import.meta.env.VITE_DEFAULT_COUNTRY_CODE as string | undefined) || '234';
+
+/**
+ * Turns a number as typed in the voter roll (08012345678, +234 801 234 5678, 2348012345678, 8012345678)
+ * into the digits-only international form WhatsApp wants. Returns null when it can't be a real number.
+ */
+export function whatsappNumber(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const raw = phone.trim();
+  let digits = raw.replace(/\D/g, '');
+  if (!digits) return null;
+  if (raw.startsWith('+')) {
+    // already international
+  } else if (digits.startsWith('00')) {
+    digits = digits.slice(2);
+  } else if (digits.startsWith('0')) {
+    digits = DEFAULT_COUNTRY_CODE + digits.slice(1);
+  } else if (!digits.startsWith(DEFAULT_COUNTRY_CODE) && digits.length <= 10) {
+    digits = DEFAULT_COUNTRY_CODE + digits;
+  }
+  return digits.length >= 11 && digits.length <= 15 ? digits : null;
+}
+
+/** wa.me opens WhatsApp (app or web) on a chat with this number and the message already typed in. */
+export function whatsappUrl(phone: string | null | undefined, message: string): string | null {
+  const number = whatsappNumber(phone);
+  return number ? `https://wa.me/${number}?text=${encodeURIComponent(message)}` : null;
+}
+
 /**
  * The ready-to-send message an admin pastes into WhatsApp / SMS / email.
  * The link sits alone on its own line so chat apps make it tappable.
