@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import PDFDocument from 'pdfkit';
 import type { Response } from 'express';
 import { linkStatRows, type ElectionSummaryReport, type PositionResultsReport, type ParticipationReport, type AuditReport } from './report.service';
@@ -23,7 +25,14 @@ function newDocument(res: Response, filename: string): PDFKit.PDFDocument {
   return doc;
 }
 
+// server/assets/logo-mark.png, resolved the same way from src/ (ts-node) and dist/ (compiled).
+const LOGO_PATH = path.join(__dirname, '..', '..', '..', 'assets', 'logo-mark.png');
+const LOGO_SIZE = 56;
+
 function addHeader(doc: PDFKit.PDFDocument, reportTitle: string, electionTitle: string) {
+  if (fs.existsSync(LOGO_PATH)) {
+    doc.image(LOGO_PATH, doc.page.width - PAGE_MARGIN - LOGO_SIZE, PAGE_MARGIN - 4, { width: LOGO_SIZE, height: LOGO_SIZE });
+  }
   doc
     .fillColor(INK)
     .font('Helvetica-Bold')
@@ -50,6 +59,7 @@ function addHeader(doc: PDFKit.PDFDocument, reportTitle: string, electionTitle: 
     .strokeColor(GOLD)
     .stroke();
 
+  doc.x = PAGE_MARGIN; // drawing the logo leaves the cursor at its x position; later text flows from the left margin
   doc.y = PAGE_MARGIN + 96;
 }
 
@@ -71,7 +81,7 @@ function addFooters(doc: PDFKit.PDFDocument) {
 
 function sectionTitle(doc: PDFKit.PDFDocument, text: string) {
   doc.moveDown(0.8);
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(13).text(text.toUpperCase());
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(13).text(text.toUpperCase(), PAGE_MARGIN, doc.y);
   doc.moveDown(0.3);
 }
 
@@ -79,6 +89,7 @@ function statRow(doc: PDFKit.PDFDocument, label: string, value: string) {
   const y = doc.y;
   doc.fillColor(SECONDARY).font('Helvetica').fontSize(10).text(label, PAGE_MARGIN, y, { continued: false, width: 220 });
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text(value, PAGE_MARGIN + 220, y);
+  doc.x = PAGE_MARGIN;
   doc.moveDown(0.4);
 }
 

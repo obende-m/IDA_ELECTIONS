@@ -1,0 +1,13 @@
+{
+  "name": "IDA Election Portal",
+  "short_name": "IDA Vote",
+  "description": "Official electronic voting portal of the Igarra Development Association.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f4ef",
+  "theme_color": "#f6f4ef",
+  "icons": [
+    { "src": "/logo-mark.png", "sizes": "632x632", "type": "image/png", "purpose": "any" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

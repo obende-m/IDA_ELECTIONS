@@ -44,7 +44,7 @@ export function LoginPage() {
     <div className="min-h-[100dvh] grid lg:grid-cols-[1.05fr_1fr] bg-background">
       <aside className="hidden lg:flex relative flex-col justify-between bg-on-background text-on-primary p-12 xl:p-16 overflow-hidden">
         <div className="absolute inset-0 grain opacity-40 invert" aria-hidden="true" />
-        <Brand inverse subtitle="Electoral Committee" className="relative" />
+        <Brand inverse subtitle="Electoral Committee" markSize={52} className="relative" />
         <div className="relative">
           <p className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-primary-fixed-dim mb-6">Restricted access</p>
           <p className="font-serif text-[3.25rem] xl:text-[3.75rem] leading-[1.02] tracking-[-0.02em] max-w-lg">
