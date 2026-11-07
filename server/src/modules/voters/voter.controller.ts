@@ -119,6 +119,21 @@ export async function exportVotersCsv(req: Request, res: Response) {
   res.send(csv);
 }
 
+export async function whatsappQueue(req: Request, res: Response) {
+  const election = await getCurrentElection();
+  const rows = await voterService.listWhatsappQueue(election.id);
+  await writeAuditLog({
+    action: 'VOTING_LINKS_WHATSAPP_QUEUE_OPENED',
+    actorId: req.user!.sub,
+    actorRole: req.user!.role,
+    actorName: req.user!.fullName,
+    electionId: election.id,
+    metadata: { count: rows.length },
+    req,
+  });
+  res.json({ voters: rows });
+}
+
 export async function exportVotingLinksCsv(req: Request, res: Response) {
   const election = await getCurrentElection();
   const rows = await voterService.listAllVotingLinks(election.id);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActionMenu, Badge, Button, Card, DataTable, PageHeader, useConfirm, useToast, type DataTableColumn } from '../../components/ui';
 import { RestrictedNotice } from '../../components/AdminNotices';
 import { useAuth } from '../../features/auth/AuthContext';
-import { useSetUserActive, useUsersList, useResetUserPassword } from '../../features/users/useUsers';
+import { useChangeUserRole, useDeleteUser, useSetUserActive, useUsersList, useResetUserPassword } from '../../features/users/useUsers';
 import { UserFormModal } from '../../features/users/UserFormModal';
 import { ResetPasswordModal } from '../../features/users/ResetPasswordModal';
 import type { AdminUser } from '../../features/users/types';
@@ -24,6 +24,8 @@ export function UsersPage() {
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const setActive = useSetUserActive();
   const resetPassword = useResetUserPassword();
+  const changeRole = useChangeUserRole();
+  const deleteUser = useDeleteUser();
 
   if (!isAuthorized) return <RestrictedNotice>Managing admin accounts is only available to Super Admin accounts.</RestrictedNotice>;
 
@@ -34,6 +36,27 @@ export function UsersPage() {
       toast({ title: u.isActive ? 'Account deactivated' : 'Account activated', description: u.fullName, variant: 'success' });
     } catch (err) {
       toast({ title: 'Could not update account', description: err instanceof Error ? err.message : undefined, variant: 'error' });
+    }
+  };
+
+  const switchRole = async (u: AdminUser) => {
+    const next = u.role === 'ADMIN' ? 'ELECTION_COMMITTEE' : 'ADMIN';
+    if (!(await confirm({ title: `Make ${u.fullName} ${ROLE[next].label === 'Administrator' ? 'an Administrator' : 'an Election Committee member'}?`, message: `Their permissions change on their next action, and they stay signed in. ${ROLE[next].desc}.`, confirmLabel: 'Change role' }))) return;
+    try {
+      await changeRole.mutateAsync({ id: u.id, role: next });
+      toast({ title: 'Role changed', description: `${u.fullName} is now ${ROLE[next].label}.`, variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Could not change role', description: err instanceof Error ? err.message : undefined, variant: 'error' });
+    }
+  };
+
+  const removeAccount = async (u: AdminUser) => {
+    if (!(await confirm({ title: `Delete ${u.fullName}?`, message: 'The account is removed and they can never sign in again. Past activity stays in the audit trail under their name. To keep the account but stop access, deactivate it instead.', confirmLabel: 'Delete account', tone: 'danger' }))) return;
+    try {
+      await deleteUser.mutateAsync(u.id);
+      toast({ title: 'Account deleted', description: u.fullName, variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Could not delete account', description: err instanceof Error ? err.message : undefined, variant: 'error' });
     }
   };
 
@@ -93,13 +116,16 @@ export function UsersPage() {
       align: 'right',
       render: (u) => {
         const isSelf = u.id === currentUser?.id;
+        const canManage = !isSelf && u.role !== 'SUPER_ADMIN';
         return (
           <div className="flex justify-end">
             <ActionMenu
               label={`Actions for ${u.fullName}`}
               items={[
+                { label: u.role === 'ADMIN' ? 'Make Election Committee' : 'Make Administrator', icon: 'refresh', hidden: !canManage, onSelect: () => switchRole(u) },
                 { label: 'Reset password', icon: 'key', onSelect: () => setResetTarget(u) },
                 { label: u.isActive ? 'Deactivate account' : 'Activate account', icon: u.isActive ? 'block' : 'check_circle', tone: u.isActive ? 'danger' : 'default', disabled: isSelf && u.isActive, onSelect: () => toggleActive(u) },
+                { label: 'Delete account', icon: 'delete', tone: 'danger', hidden: !canManage, onSelect: () => removeAccount(u) },
               ]}
             />
           </div>

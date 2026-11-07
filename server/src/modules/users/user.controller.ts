@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { actorFromRequest } from '../../lib/actor';
 import * as userService from './user.service';
-import type { CreateUserInput, ResetUserPasswordInput } from './user.validation';
+import type { ChangeUserRoleInput, CreateUserInput, ResetUserPasswordInput } from './user.validation';
 
 export async function list(_req: Request, res: Response) {
   const users = await userService.listUsers();
@@ -21,6 +21,17 @@ export async function activate(req: Request, res: Response) {
 export async function deactivate(req: Request, res: Response) {
   const user = await userService.setUserActive(req.params.id, false, actorFromRequest(req), req);
   res.json({ user });
+}
+
+export async function changeRole(req: Request, res: Response) {
+  const { role } = req.body as ChangeUserRoleInput;
+  const user = await userService.changeUserRole(req.params.id, role, actorFromRequest(req), req);
+  res.json({ user });
+}
+
+export async function remove(req: Request, res: Response) {
+  await userService.deleteUser(req.params.id, actorFromRequest(req), req);
+  res.status(204).send();
 }
 
 export async function resetPassword(req: Request, res: Response) {

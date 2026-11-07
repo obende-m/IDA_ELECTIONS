@@ -1,5 +1,5 @@
 import { apiRequest, apiUpload, apiDownload } from '../../lib/apiClient';
-import type { ImportReport, Voter, VoterFormValues, VoterListQuery, VoterListResult } from './types';
+import type { ImportReport, Voter, VoterFormValues, VoterListQuery, VoterListResult, WhatsappQueueVoter } from './types';
 
 function buildQueryString(query: VoterListQuery): string {
   const params = new URLSearchParams();
@@ -25,6 +25,7 @@ export const votersApi = {
   revokeToken: (id: string) => apiRequest<void>(`/voters/${id}/token/revoke`, { method: 'POST' }),
   replaceToken: (id: string) => apiRequest<{ votingLink: string }>(`/voters/${id}/token/replace`, { method: 'POST' }),
   votingLink: (id: string) => apiRequest<{ votingLink: string }>(`/voters/${id}/token/link`),
+  whatsappQueue: () => apiRequest<{ voters: WhatsappQueueVoter[] }>('/voters/whatsapp-queue'),
   import: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);

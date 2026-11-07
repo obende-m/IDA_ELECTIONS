@@ -85,11 +85,17 @@ export function ActionMenu({ label, items }: { label: string; items: MenuItem[] 
     const onDown = (e: MouseEvent) => {
       if (!menuRef.current?.contains(e.target as Node) && !btnRef.current?.contains(e.target as Node)) setOpen(false);
     };
+    // Escape closes the menu even if focus hasn't moved into it yet (e.g. right after a mouse click).
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     // Keep the menu attached to its button when the page or a scrolling table moves.
+    document.addEventListener('keydown', onEsc);
     document.addEventListener('mousedown', onDown);
     window.addEventListener('scroll', place, true);
     window.addEventListener('resize', place);
     return () => {
+      document.removeEventListener('keydown', onEsc);
       document.removeEventListener('mousedown', onDown);
       window.removeEventListener('scroll', place, true);
       window.removeEventListener('resize', place);

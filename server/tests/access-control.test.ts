@@ -178,3 +178,88 @@ test('the schedule can be cleared (null) and a past end time is refused on an op
   const empty = await api('/elections/current', { method: 'PATCH', token: committee, body: { startTime: '', endTime: '' } });
   assert.equal(empty.status, 200);
 });
+
+test('Super Admin can change an Admin <-> Committee role; it applies at once and is audited', async () => {
+  const superAdmin = await login(emails.SUPER_ADMIN);
+  const email = `role-swap-${Date.now()}@example.test`;
+  const user = await prisma.user.create({ data: { email, fullName: 'Role Swap', role: 'ADMIN', passwordHash: await hashPassword(PASSWORD) } });
+  const token = await login(email);
+  assert.equal((await api('/voting/records', { token })).status, 403, 'an Admin cannot see vote records');
+
+  const up = await api(`/users/${user.id}/role`, { method: 'PATCH', token: superAdmin, body: { role: 'ELECTION_COMMITTEE' } });
+  assert.equal(up.status, 200);
+  assert.equal(((await up.json()) as { user: { role: string } }).user.role, 'ELECTION_COMMITTEE');
+  assert.equal((await api('/voting/records', { token })).status, 200, 'the new role applies on the very next request');
+
+  const down = await api(`/users/${user.id}/role`, { method: 'PATCH', token: superAdmin, body: { role: 'ADMIN' } });
+  assert.equal(down.status, 200);
+  assert.equal((await api('/voting/records', { token })).status, 403);
+
+  const audits = await prisma.auditLog.findMany({ where: { action: 'ADMIN_USER_ROLE_CHANGED', targetId: user.id } });
+  assert.equal(audits.length, 2);
+});
+
+test('role changes and deletion are Super Admin only, and cannot touch Super Admins or yourself', async () => {
+  const superAdmin = await login(emails.SUPER_ADMIN);
+  const admin = await login(emails.ADMIN);
+  const committee = await login(emails.ELECTION_COMMITTEE);
+  const target = await prisma.user.create({ data: { email: `guard-${Date.now()}@example.test`, fullName: 'Guard', role: 'ADMIN', passwordHash: await hashPassword(PASSWORD) } });
+  const me = await prisma.user.findUniqueOrThrow({ where: { email: emails.SUPER_ADMIN } });
+  const otherSuper = await prisma.user.create({ data: { email: `super2-${Date.now()}@example.test`, fullName: 'Second Super', role: 'SUPER_ADMIN', passwordHash: await hashPassword(PASSWORD) } });
+
+  for (const token of [admin, committee]) {
+    assert.equal((await api(`/users/${target.id}/role`, { method: 'PATCH', token, body: { role: 'ELECTION_COMMITTEE' } })).status, 403);
+    assert.equal((await api(`/users/${target.id}`, { method: 'DELETE', token })).status, 403);
+  }
+  assert.equal((await api(`/users/${target.id}/role`, { method: 'PATCH', body: { role: 'ADMIN' } })).status, 401);
+
+  assert.equal((await api(`/users/${target.id}/role`, { method: 'PATCH', token: superAdmin, body: { role: 'SUPER_ADMIN' } })).status, 400, 'nobody can be promoted to Super Admin here');
+  assert.equal((await api(`/users/${me.id}/role`, { method: 'PATCH', token: superAdmin, body: { role: 'ADMIN' } })).status, 409, 'no changing your own role');
+  assert.equal((await api(`/users/${otherSuper.id}/role`, { method: 'PATCH', token: superAdmin, body: { role: 'ADMIN' } })).status, 409, 'no demoting a Super Admin');
+  assert.equal((await api(`/users/${me.id}`, { method: 'DELETE', token: superAdmin })).status, 409, 'no deleting yourself');
+  assert.equal((await api(`/users/${otherSuper.id}`, { method: 'DELETE', token: superAdmin })).status, 409, 'no deleting a Super Admin');
+  assert.equal((await api(`/users/00000000-0000-0000-0000-000000000000`, { method: 'DELETE', token: superAdmin })).status, 404);
+  assert.ok(await prisma.user.findUnique({ where: { id: otherSuper.id } }), 'the Super Admin is still there');
+});
+
+test('deleting an account removes their access but keeps their history in the audit trail', async () => {
+  const superAdmin = await login(emails.SUPER_ADMIN);
+  const email = `to-delete-${Date.now()}@example.test`;
+  const user = await prisma.user.create({ data: { email, fullName: 'Leaver Admin', role: 'ELECTION_COMMITTEE', passwordHash: await hashPassword(PASSWORD) } });
+  const token = await login(email);
+  assert.equal((await api('/voters', { token })).status, 200);
+  // something this person did earlier, which must survive their account
+  await prisma.auditLog.create({ data: { action: 'TEST_PAST_ACTION', actorId: user.id, actorRole: 'ELECTION_COMMITTEE', actorName: 'Leaver Admin', userId: user.id } });
+
+  assert.equal((await api(`/users/${user.id}`, { method: 'DELETE', token: superAdmin })).status, 204);
+  assert.equal((await api('/voters', { token })).status, 401, 'their still-valid token stops working');
+  assert.equal((await api('/auth/login', { method: 'POST', body: { email, password: PASSWORD } })).status, 401, 'they cannot sign in again');
+  assert.equal(await prisma.user.findUnique({ where: { id: user.id } }), null);
+
+  const past = await prisma.auditLog.findFirst({ where: { action: 'TEST_PAST_ACTION', actorId: user.id } });
+  assert.equal(past?.actorName, 'Leaver Admin', 'their earlier activity is still recorded under their name');
+  const deleted = await prisma.auditLog.findFirst({ where: { action: 'ADMIN_USER_DELETED', targetId: user.id } });
+  assert.ok(deleted, 'the deletion itself is audited');
+});
+
+test('the WhatsApp queue is admin-only, lists live links with phone numbers, and its use is audited', async () => {
+  const admin = await login(emails.ADMIN);
+  assert.equal((await api('/voters/whatsapp-queue')).status, 401);
+
+  const election = await prisma.election.findFirstOrThrow({ orderBy: { createdAt: 'desc' } });
+  const created = await api('/voters', { method: 'POST', token: admin, body: { membershipNumber: `WA-${Date.now()}`, fullName: 'Whats App', phone: '08012345678' } });
+  assert.equal(created.status, 201);
+  const voter = ((await created.json()) as { voter: { id: string } }).voter;
+  const empty = (await (await api('/voters/whatsapp-queue', { token: admin })).json()) as { voters: { id: string }[] };
+  assert.ok(!empty.voters.some((v) => v.id === voter.id), 'a voter with no link is not in the queue');
+
+  assert.equal((await api(`/voters/${voter.id}/token/issue`, { method: 'POST', token: admin })).status, 201);
+  const res = await api('/voters/whatsapp-queue', { token: admin });
+  assert.equal(res.status, 200);
+  const row = ((await res.json()) as { voters: { id: string; phone: string; votingLink: string }[] }).voters.find((v) => v.id === voter.id);
+  assert.ok(row, 'the voter with a live link is in the queue');
+  assert.equal(row!.phone, '08012345678');
+  assert.match(row!.votingLink, /\/vote\/[A-Za-z0-9_-]{40,}$/);
+  const audit = await prisma.auditLog.findFirst({ where: { action: 'VOTING_LINKS_WHATSAPP_QUEUE_OPENED', electionId: election.id } });
+  assert.ok(audit, 'opening the queue is audited');
+});

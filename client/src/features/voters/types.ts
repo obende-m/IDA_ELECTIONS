@@ -14,6 +14,14 @@ export interface Voter {
   updatedAt: string;
 }
 
+export interface WhatsappQueueVoter {
+  id: string;
+  membershipNumber: string;
+  fullName: string;
+  phone: string | null;
+  votingLink: string;
+}
+
 export interface VoterListResult {
   voters: Voter[];
   total: number;
