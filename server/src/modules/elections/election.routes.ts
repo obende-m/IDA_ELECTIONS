@@ -12,13 +12,14 @@ router.use(requireAuth, requireRole('ADMIN'));
 
 router.get('/current', asyncHandler(electionController.getCurrent));
 router.patch('/current', requireRole('ELECTION_COMMITTEE'), validateBody(updateElectionSchema), asyncHandler(electionController.update));
-// Opening/pausing/closing/archiving an election (and editing its schedule) decides when voting
+// Opening/pausing/closing an election (and editing its schedule) decides when voting
 // happens and certifies results, so it is restricted above ordinary data-entry ADMIN accounts.
 router.post('/current/open', requireRole('ELECTION_COMMITTEE'), asyncHandler(electionController.open));
 router.post('/current/pause', requireRole('ELECTION_COMMITTEE'), asyncHandler(electionController.pause));
 router.post('/current/resume', requireRole('ELECTION_COMMITTEE'), asyncHandler(electionController.resume));
 router.post('/current/close', requireRole('ELECTION_COMMITTEE'), asyncHandler(electionController.close));
-router.post('/current/archive', requireRole('ELECTION_COMMITTEE'), asyncHandler(electionController.archive));
+// Archiving is the final, organisation-level step, so (like unlocking) it is Super Admin only.
+router.post('/current/archive', requireRole('SUPER_ADMIN'), asyncHandler(electionController.archive));
 router.post('/current/lock', requireRole('ELECTION_COMMITTEE'), validateBody(lockReasonSchema), asyncHandler(electionController.lock));
 // Unlocking is the one action that requires SUPER_ADMIN specifically — requireRole('ADMIN') above
 // already let ADMIN through, so this second check narrows just this route.

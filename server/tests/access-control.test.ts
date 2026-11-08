@@ -100,8 +100,11 @@ test('privilege boundaries: ADMIN < ELECTION_COMMITTEE < SUPER_ADMIN', async () 
   assert.equal((await api('/voting/records', { token: committee })).status, 200);
   assert.equal((await api('/users', { token: committee })).status, 403);
   assert.equal((await api('/elections/current/unlock', { method: 'POST', token: committee, body: { reason: 'not allowed to unlock' } })).status, 403);
+  assert.equal((await api('/elections/current/archive', { method: 'POST', token: committee })).status, 403, 'only a Super Admin can archive');
 
   assert.equal((await api('/users', { token: superAdmin })).status, 200);
+  // a Super Admin passes the role check (and is then refused only because this test election is not CLOSED)
+  assert.equal((await api('/elections/current/archive', { method: 'POST', token: superAdmin })).status, 409);
 });
 
 test('a deactivated admin loses access immediately, not after the JWT expires', async () => {

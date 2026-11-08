@@ -6,7 +6,7 @@ import { Button, Card, CardHeader, CardTitle, ElectionStatusBadge, ErrorState, F
 import { useCurrentElection, useUpdateElection, useOpenElection, usePauseElection, useResumeElection, useCloseElection, useArchiveElection } from '../../features/elections/useElection';
 import { LockBanner } from '../../features/elections/LockBanner';
 import { useAuth } from '../../features/auth/AuthContext';
-import { canManageElection } from '../../features/auth/permissions';
+import { canArchiveElection, canManageElection } from '../../features/auth/permissions';
 import { isoToLocalInput, localInputToIso, timezoneLabel } from '../../lib/datetime';
 import { cn } from '../../lib/cn';
 import type { ElectionFormValues, ElectionStatus } from '../../features/elections/types';
@@ -53,6 +53,7 @@ export function SettingsPage() {
   const confirm = useConfirm();
   const { user } = useAuth();
   const canManage = canManageElection(user?.role);
+  const canArchive = canArchiveElection(user?.role);
   const { data, isLoading, isError, error, refetch, isFetching } = useCurrentElection();
   const election = data?.election;
 
@@ -125,7 +126,7 @@ export function SettingsPage() {
       {!canManage && (
         <div role="note" className="flex items-start gap-3 rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
           <Icon name="lock" size={17} className="text-secondary shrink-0 mt-0.5" />
-          <p className="text-[0.875rem] text-on-surface-variant">View only — editing details and schedule, and opening, pausing, closing or archiving the election require an Election Committee or Super Admin account.</p>
+          <p className="text-[0.875rem] text-on-surface-variant">View only — editing details and schedule, and opening, pausing or closing the election require an Election Committee or Super Admin account, and archiving requires a Super Admin.</p>
         </div>
       )}
 
@@ -184,11 +185,12 @@ export function SettingsPage() {
                   </Button>
                 </>
               )}
-              {election.status === 'CLOSED' && (
+              {election.status === 'CLOSED' && canArchive && (
                 <Button variant="secondary" loading={archiveElection.isPending} onClick={() => run(() => archiveElection.mutateAsync(), 'Election archived', { title: 'Archive this election?', message: 'A final organisational step. Certified results are not affected.', confirmLabel: 'Archive' })}>
                   Archive election
                 </Button>
               )}
+              {election.status === 'CLOSED' && !canArchive && <p className="text-[0.875rem] text-secondary">Only a Super Admin can archive a closed election.</p>}
               {election.status === 'ARCHIVED' && <p className="text-[0.875rem] text-secondary">This election is archived. Its results are final.</p>}
             </div>
           )}
