@@ -1,5 +1,5 @@
 import twilio from 'twilio';
-import { TwilioSendError, type InviteDetails, type SendResult } from './whatsapp';
+import { envValue, TwilioSendError, type InviteDetails, type SendResult } from './whatsapp';
 
 /**
  * Automatic SMS sending through Twilio. Server-only, like lib/whatsapp.ts; the message text is never
@@ -21,13 +21,16 @@ export interface SmsConfig {
 
 export function getSmsConfig(env: NodeJS.ProcessEnv = process.env): SmsConfig | null {
   if (env.SMS_ENABLED !== 'true') return null;
-  const { TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID, TWILIO_API_KEY_SECRET, TWILIO_SMS_FROM } = env;
+  const TWILIO_ACCOUNT_SID = envValue(env.TWILIO_ACCOUNT_SID);
+  const TWILIO_API_KEY_SID = envValue(env.TWILIO_API_KEY_SID);
+  const TWILIO_API_KEY_SECRET = envValue(env.TWILIO_API_KEY_SECRET);
+  const TWILIO_SMS_FROM = envValue(env.TWILIO_SMS_FROM);
   if (!TWILIO_ACCOUNT_SID || !TWILIO_API_KEY_SID || !TWILIO_API_KEY_SECRET || !TWILIO_SMS_FROM) return null;
   return {
     accountSid: TWILIO_ACCOUNT_SID,
     apiKeySid: TWILIO_API_KEY_SID,
     apiKeySecret: TWILIO_API_KEY_SECRET,
-    from: TWILIO_SMS_FROM.trim(),
+    from: TWILIO_SMS_FROM,
     statusCallback: env.PUBLIC_SERVER_URL ? `${env.PUBLIC_SERVER_URL.replace(/\/$/, '')}/api/twilio/status` : undefined,
   };
 }

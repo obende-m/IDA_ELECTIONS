@@ -628,7 +628,9 @@ export async function sendInviteToVoter(
     const hint = /compliance profile|KYC|Trust Hub/i.test(err.message)
       ? 'Twilio has not approved the account owner verification (KYC) yet. Complete it in the Twilio Console > Trust Hub, then try again.'
       : twilioErrorHint(channel, err.code);
-    throw new AppError(`${label} could not send to ${voter.fullName}${err.code ? ` (Twilio error ${err.code})` : ''}. ${hint}`, 502);
+    // No Twilio code means the request never reached Twilio (bad setting, network): say what went wrong.
+    const reason = err.code ? ` (Twilio error ${err.code})` : ` (${err.message.slice(0, 200)})`;
+    throw new AppError(`${label} could not send to ${voter.fullName}${reason}. ${hint}`, 502);
   }
 }
 

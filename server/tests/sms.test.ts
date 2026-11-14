@@ -62,3 +62,18 @@ test('SMS stays off unless explicitly enabled with a sender', () => {
   assert.equal(getSmsConfig({ ...full, TWILIO_SMS_FROM: '' }), null);
   assert.equal(getSmsConfig(full)?.from, 'IDAElection');
 });
+
+test('settings pasted with quotes or spaces still work (the Twilio library rejects " ACxxx")', () => {
+  const cfg = getSmsConfig({
+    SMS_ENABLED: 'true',
+    TWILIO_ACCOUNT_SID: '"AC123"',
+    TWILIO_API_KEY_SID: ' SK123\n',
+    TWILIO_API_KEY_SECRET: "'secret' ",
+    TWILIO_SMS_FROM: '"IDAElection"',
+  });
+  assert.equal(cfg?.accountSid, 'AC123');
+  assert.equal(cfg?.apiKeySid, 'SK123');
+  assert.equal(cfg?.apiKeySecret, 'secret');
+  assert.equal(cfg?.from, 'IDAElection');
+  assert.equal(getSmsConfig({ SMS_ENABLED: 'true', TWILIO_ACCOUNT_SID: '""', TWILIO_API_KEY_SID: 'SK1', TWILIO_API_KEY_SECRET: 's', TWILIO_SMS_FROM: 'X' }), null);
+});

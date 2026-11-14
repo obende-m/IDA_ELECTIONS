@@ -21,9 +21,23 @@ export interface WhatsappConfig {
   statusCallback?: string;
 }
 
+/**
+ * A setting as pasted into Render: trims spaces/newlines and one pair of surrounding quotes, so
+ * "ACxxxx" copied from .env.example works the same as ACxxxx. Empty after cleaning = not set.
+ */
+export function envValue(value: string | undefined): string | undefined {
+  if (value == null) return undefined;
+  let v = value.trim();
+  if (v.length >= 2 && (v[0] === '"' || v[0] === "'") && v[v.length - 1] === v[0]) v = v.slice(1, -1).trim();
+  return v || undefined;
+}
+
 export function getWhatsappConfig(env: NodeJS.ProcessEnv = process.env): WhatsappConfig | null {
   if (env.WHATSAPP_ENABLED !== 'true') return null;
-  const { TWILIO_ACCOUNT_SID, TWILIO_API_KEY_SID, TWILIO_API_KEY_SECRET, TWILIO_WHATSAPP_FROM } = env;
+  const TWILIO_ACCOUNT_SID = envValue(env.TWILIO_ACCOUNT_SID);
+  const TWILIO_API_KEY_SID = envValue(env.TWILIO_API_KEY_SID);
+  const TWILIO_API_KEY_SECRET = envValue(env.TWILIO_API_KEY_SECRET);
+  const TWILIO_WHATSAPP_FROM = envValue(env.TWILIO_WHATSAPP_FROM);
   if (!TWILIO_ACCOUNT_SID || !TWILIO_API_KEY_SID || !TWILIO_API_KEY_SECRET || !TWILIO_WHATSAPP_FROM) return null;
   const from = TWILIO_WHATSAPP_FROM.startsWith('whatsapp:') ? TWILIO_WHATSAPP_FROM : `whatsapp:${TWILIO_WHATSAPP_FROM}`;
   return {
@@ -31,7 +45,7 @@ export function getWhatsappConfig(env: NodeJS.ProcessEnv = process.env): Whatsap
     apiKeySid: TWILIO_API_KEY_SID,
     apiKeySecret: TWILIO_API_KEY_SECRET,
     from,
-    contentSid: env.TWILIO_INVITE_CONTENT_SID || undefined,
+    contentSid: envValue(env.TWILIO_INVITE_CONTENT_SID),
     statusCallback: env.PUBLIC_SERVER_URL ? `${env.PUBLIC_SERVER_URL.replace(/\/$/, '')}/api/twilio/status` : undefined,
   };
 }
