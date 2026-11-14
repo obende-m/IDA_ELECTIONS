@@ -5,6 +5,7 @@ import { generateVotingToken, hashToken } from '../../lib/tokens';
 import { encryptToken, decryptToken } from '../../lib/crypto';
 import { writeAuditLog } from '../../lib/audit';
 import { assertElectionNotLocked } from '../../lib/electionLock';
+import { applyScheduledTransition } from '../../lib/election';
 import type { Actor } from '../../lib/actor';
 import { getWhatsappConfig, sendWhatsappInvite, toE164, whatsappMode, TwilioSendError } from '../../lib/whatsapp';
 import { getSmsConfig, sendSmsInvite } from '../../lib/sms';
@@ -443,6 +444,14 @@ export interface TokenResolution {
   fullName: string;
   membershipNumber: string;
   status: 'ISSUED' | 'CONSUMED' | 'REVOKED';
+  /** Lets the voter page say when voting opens and closes. */
+  election: {
+    title: string;
+    status: string;
+    isLocked: boolean;
+    startTime: Date | null;
+    endTime: Date | null;
+  };
 }
 
 type TokenWithVoter = VotingToken & { voter: Voter };
@@ -529,11 +538,21 @@ export async function resolveVotingToken(rawToken: string, req?: import('express
     req,
   });
 
+  // Same scheduled open/close the ballot applies, so the times and status shown are current.
+  const election = await applyScheduledTransition(await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } }));
+
   return {
     voterId: token.voter.id,
     fullName: token.voter.fullName,
     membershipNumber: token.voter.membershipNumber,
     status: token.status,
+    election: {
+      title: election.title,
+      status: election.status,
+      isLocked: election.isLocked,
+      startTime: election.startTime,
+      endTime: election.endTime,
+    },
   };
 }
 

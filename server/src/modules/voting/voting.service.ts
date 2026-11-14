@@ -8,6 +8,15 @@ import { recordVoteInTallies } from '../analytics/analytics.service';
 import type { CastVoteInput, VoteRecordsQuery } from './voting.validation';
 import type { Actor } from '../../lib/actor';
 
+/** "Voting has not opened yet. It opens on Friday, 20 November 2026 at 9:00 am (Nigeria time)." when it's still to come. */
+export function notOpenMessage(election: { status: string; startTime: Date | null }, now = new Date()): string {
+  if (election.status === 'DRAFT' && election.startTime && election.startTime > now) {
+    const opens = election.startTime.toLocaleString('en-NG', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Africa/Lagos' });
+    return `Voting has not opened yet. It opens on ${opens} (Nigeria time). Please come back then with this same link.`;
+  }
+  return 'Voting is not currently open for this election.';
+}
+
 export async function getBallot(rawToken: string, req?: import('express').Request) {
   const token = await getValidToken(rawToken, req);
 
@@ -17,7 +26,7 @@ export async function getBallot(rawToken: string, req?: import('express').Reques
     await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } })
   );
   if (election.status !== 'ACTIVE') {
-    throw new AppError('Voting is not currently open for this election.', 409);
+    throw new AppError(notOpenMessage(election), 409);
   }
   if (election.isLocked) {
     throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
@@ -56,7 +65,7 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
     await prisma.election.findUniqueOrThrow({ where: { id: token.electionId } })
   );
   if (election.status !== 'ACTIVE') {
-    throw new AppError('Voting is not currently open for this election.', 409);
+    throw new AppError(notOpenMessage(election), 409);
   }
   if (election.isLocked) {
     throw new AppError('This election is locked. Voting is temporarily unavailable.', 423);
