@@ -2,8 +2,32 @@ interface InviteDetails {
   fullName: string;
   votingLink: string;
   electionTitle?: string | null;
+  startTime?: string | null;
   endTime?: string | null;
 }
+
+// Voters are in Nigeria, so times in messages are always Lagos time, whatever the admin's device says.
+const TIME_ZONE = 'Africa/Lagos';
+
+function toDate(value?: string | null): Date | null {
+  const d = value ? new Date(value) : null;
+  return d && !Number.isNaN(d.getTime()) ? d : null;
+}
+
+/** "Friday, 20 November 2026 at 9:00 am", in Lagos time. */
+export function formatVotingTime(value?: string | null): string | null {
+  const d = toDate(value);
+  return d ? d.toLocaleString('en-NG', { dateStyle: 'full', timeStyle: 'short', timeZone: TIME_ZONE }) : null;
+}
+
+/** "20 Nov 09:00": compact form for SMS. */
+function formatShort(value?: string | null): string | null {
+  const d = toDate(value);
+  return d ? d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TIME_ZONE }) : null;
+}
+
+/** One SMS part holds 160 plain characters. */
+export const SMS_ONE_PART = 160;
 
 const DEFAULT_COUNTRY_CODE = (import.meta.env.VITE_DEFAULT_COUNTRY_CODE as string | undefined) || '234';
 
@@ -35,15 +59,22 @@ export function whatsappUrl(phone: string | null | undefined, message: string): 
 }
 
 /**
+ * sms: opens the phone's own Messages app on this number with the message already typed in.
+ * `?&body=` is the form both Android and iPhone read correctly.
+ */
+export function smsUrl(phone: string | null | undefined, message: string): string | null {
+  const number = whatsappNumber(phone);
+  return number ? `sms:+${number}?&body=${encodeURIComponent(message)}` : null;
+}
+
+/**
  * The ready-to-send message an admin pastes into WhatsApp / SMS / email.
  * The link sits alone on its own line so chat apps make it tappable.
  */
-export function buildInviteMessage({ fullName, votingLink, electionTitle, endTime }: InviteDetails): string {
+export function buildInviteMessage({ fullName, votingLink, electionTitle, startTime, endTime }: InviteDetails): string {
   const firstName = fullName.trim().split(/\s+/)[0] || 'Member';
-  const deadline = endTime ? new Date(endTime) : null;
-  const closes = deadline && !Number.isNaN(deadline.getTime())
-    ? deadline.toLocaleString('en-NG', { dateStyle: 'full', timeStyle: 'short' })
-    : null;
+  const opens = formatVotingTime(startTime);
+  const closes = formatVotingTime(endTime);
 
   return [
     `Dear ${firstName},`,
@@ -55,9 +86,34 @@ export function buildInviteMessage({ fullName, votingLink, electionTitle, endTim
     votingLink,
     '',
     'This link is only for you. Please do not share it or forward it to anyone. It works for one vote only.',
-    ...(closes ? ['', `Voting closes: ${closes}.`] : []),
+    ...(opens || closes ? [''] : []),
+    ...(opens ? [`Voting opens: ${opens}.`] : []),
+    ...(closes ? [`Voting closes: ${closes}.`] : []),
     '',
     'Thank you.',
     'IDA Electoral Committee',
   ].join('\n');
+}
+
+/**
+ * The short text for "Open in my SMS": the longest version that still fits in one SMS part (160 characters).
+ * Drops the closing time first, then the greeting; the opening time stays as long as it fits.
+ */
+export function buildShortSmsMessage({ fullName, votingLink, startTime, endTime }: InviteDetails): string {
+  // Plain letters only, so the phone doesn't switch to the 70-character Unicode mode.
+  const firstName = (fullName.trim().split(/\s+/)[0] || 'Member').normalize('NFKD').replace(/[^\x20-\x7E]/g, '') || 'Member';
+  const opens = formatShort(startTime);
+  const closes = formatShort(endTime);
+  const footer = (withCloses: boolean) =>
+    [opens && `Opens ${opens}.`, withCloses && closes && `Closes ${closes}.`, 'Do not share.'].filter(Boolean).join(' ');
+
+  const full = `Dear ${firstName}, your IDA voting link:\n${votingLink}\n${footer(true)}`;
+  const onePart = [
+    full,
+    `Dear ${firstName}, your IDA voting link:\n${votingLink}\n${footer(false)}`,
+    `${firstName}, your IDA voting link:\n${votingLink}\n${footer(false)}`,
+    `Your IDA voting link:\n${votingLink}\n${footer(false)}`,
+  ];
+  // Older, longer links can't fit in one part whatever we cut, so send the full wording in two.
+  return onePart.find((t) => t.length <= SMS_ONE_PART) ?? full;
 }

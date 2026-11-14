@@ -6,6 +6,14 @@ export interface ResolvedVotingSession {
   fullName: string;
   membershipNumber: string;
   status: VotingTokenStatus;
+  /** When voting opens and closes (ISO strings). Missing on sessions from before this field existed. */
+  election?: {
+    title: string;
+    status: string;
+    isLocked: boolean;
+    startTime: string | null;
+    endTime: string | null;
+  };
 }
 
 export interface BallotCandidate {

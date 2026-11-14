@@ -7,6 +7,7 @@ import { votingApi } from '../../features/voting/votingApi';
 import { ApiError } from '../../lib/apiClient';
 import { useSlowHint } from '../../lib/useSlowHint';
 import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
+import { formatVotingTime } from '../../features/voters/inviteMessage';
 
 /** Identity confirmation: the link is the credential; this gives the voter a moment to confirm it's really them. */
 export function VerifyPage() {
@@ -18,6 +19,11 @@ export function VerifyPage() {
   const slow = useSlowHint(loading, 8000);
 
   if (!session) return <VotingLinkRequiredNotice />;
+
+  const election = session.election;
+  const opens = formatVotingTime(election?.startTime);
+  const closes = formatVotingTime(election?.endTime);
+  const notOpenYet = !!election && election.status === 'DRAFT' && !!election.startTime && new Date(election.startTime) > new Date();
 
   const continueToBallot = async () => {
     setLoading(true);
@@ -112,7 +118,29 @@ export function VerifyPage() {
               </dd>
             </div>
           </dl>
+          {(opens || closes) && (
+            <dl className="grid grid-cols-2 border-t border-outline-variant">
+              <div className="p-5 sm:px-8">
+                <dt className="eyebrow">Voting opens</dt>
+                <dd className="mt-1 text-[0.9375rem]">{opens ?? 'To be announced'}</dd>
+              </div>
+              <div className="p-5 sm:px-8 border-l border-outline-variant">
+                <dt className="eyebrow">Voting closes</dt>
+                <dd className="mt-1 text-[0.9375rem]">{closes ?? 'To be announced'}</dd>
+              </div>
+            </dl>
+          )}
         </div>
+
+        {notOpenYet && (
+          <div role="status" className="mt-6 rounded-2xl border border-outline-variant bg-surface-container-low p-5 flex gap-3">
+            <Icon name="schedule" size={20} className="shrink-0 mt-0.5 text-primary" />
+            <p className="text-body-md">
+              <strong>Voting has not opened yet.</strong> It opens on {opens} (Nigeria time). Keep this message and open the same link
+              again then.
+            </p>
+          </div>
+        )}
 
         <div className="mt-8 space-y-3">
           <Button size="lg" fullWidth rightIcon="arrow_forward" loading={loading} onClick={continueToBallot}>

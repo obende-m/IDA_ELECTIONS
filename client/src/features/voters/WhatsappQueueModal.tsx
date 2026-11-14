@@ -8,6 +8,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   electionTitle?: string | null;
+  startTime?: string | null;
   endTime?: string | null;
 }
 
@@ -35,7 +36,7 @@ const keyOf = (v: WhatsappQueueVoter) => `${v.id}:${v.votingLink.slice(-12)}`;
  * already typed. The admin taps Send in WhatsApp, comes back and presses the button again for the next member.
  * (WhatsApp does not let a website send a message on its own: that needs the WhatsApp Business API.)
  */
-export function WhatsappQueueModal({ open, onClose, electionTitle, endTime }: Props) {
+export function WhatsappQueueModal({ open, onClose, electionTitle, startTime, endTime }: Props) {
   const [voters, setVoters] = useState<WhatsappQueueVoter[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [opened, setOpened] = useState<Set<string>>(loadOpened);
@@ -65,7 +66,7 @@ export function WhatsappQueueModal({ open, onClose, electionTitle, endTime }: Pr
   const openChat = (v: WhatsappQueueVoter) => {
     const url = whatsappUrl(
       v.phone,
-      buildInviteMessage({ fullName: v.fullName, votingLink: v.votingLink, electionTitle, endTime })
+      buildInviteMessage({ fullName: v.fullName, votingLink: v.votingLink, electionTitle, startTime, endTime })
     );
     if (!url) return;
     window.open(url, 'ida-whatsapp'); // same tab each time, so the admin isn't left with dozens of tabs

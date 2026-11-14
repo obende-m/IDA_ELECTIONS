@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActionMenu, Badge, Button, Card, DataTable, PageHeader, Pagination, SearchInput, Tabs, useConfirm, useToast, type DataTableColumn, type MenuItem } from '../../components/ui';
 import { useDeleteVoter, useIssueToken, useRevokeToken, useMessagingStatus, useReplaceToken, useSendInvite, useSetVoterActive, useVotersList } from '../../features/voters/useVoters';
 import { votersApi } from '../../features/voters/votersApi';
-import { buildInviteMessage, whatsappUrl } from '../../features/voters/inviteMessage';
+import { buildInviteMessage, buildShortSmsMessage, smsUrl, whatsappUrl } from '../../features/voters/inviteMessage';
 import { WhatsappQueueModal } from '../../features/voters/WhatsappQueueModal';
 import { VoterFormModal } from '../../features/voters/VoterFormModal';
 import { ImportVotersModal } from '../../features/voters/ImportVotersModal';
@@ -93,7 +93,7 @@ export function VotersPage() {
     try {
       const { votingLink } = await votersApi.votingLink(v.id);
       await navigator.clipboard.writeText(
-        buildInviteMessage({ fullName: v.fullName, votingLink, electionTitle: election?.title, endTime: election?.endTime })
+        buildInviteMessage({ fullName: v.fullName, votingLink, electionTitle: election?.title, startTime: election?.startTime, endTime: election?.endTime })
       );
       toast({ title: 'Message copied', description: `Paste it into WhatsApp, SMS or email for ${v.fullName}. Their link is inside.`, variant: 'success' });
     } catch {
@@ -111,13 +111,30 @@ export function VotersPage() {
     const tab = window.open('', 'ida-whatsapp');
     try {
       const { votingLink } = await votersApi.votingLink(v.id);
-      const url = whatsappUrl(v.phone, buildInviteMessage({ fullName: v.fullName, votingLink, electionTitle: election?.title, endTime: election?.endTime }));
+      const url = whatsappUrl(v.phone, buildInviteMessage({ fullName: v.fullName, votingLink, electionTitle: election?.title, startTime: election?.startTime, endTime: election?.endTime }));
       if (!url) throw new Error('bad number');
       if (tab) tab.location.href = url;
       else window.location.assign(url);
     } catch {
       tab?.close();
       toast({ title: 'Could not open WhatsApp', variant: 'error' });
+    }
+  };
+
+  /** Opens this phone's Messages app on the member's number with the message and link already typed: just tap Send. */
+  const sendOnMySms = async (v: Voter) => {
+    if (!smsUrl(v.phone, '')) {
+      toast({ title: 'No usable phone number', description: `Add ${v.fullName}'s phone number (Edit details), then try again.`, variant: 'error' });
+      return;
+    }
+    try {
+      const { votingLink } = await votersApi.votingLink(v.id);
+      const url = smsUrl(v.phone, buildShortSmsMessage({ fullName: v.fullName, votingLink, electionTitle: election?.title, startTime: election?.startTime, endTime: election?.endTime }));
+      if (!url) throw new Error('bad number');
+      // sms: hands off to the Messages app; this page stays open.
+      window.location.href = url;
+    } catch {
+      toast({ title: 'Could not open Messages', variant: 'error' });
     }
   };
 
@@ -218,6 +235,7 @@ export function VotersPage() {
           { label: whatsappAuto === 'sandbox' ? 'Send automatically (WhatsApp test)' : 'Send automatically on WhatsApp', icon: 'send', hidden: v.votingStatus !== 'ISSUED' || whatsappAuto === 'off', disabled: isLocked || autoSending !== null, onSelect: () => sendAuto(v, 'whatsapp') },
           { label: 'Send by SMS', icon: 'send', hidden: v.votingStatus !== 'ISSUED' || !smsAuto, disabled: isLocked || autoSending !== null, onSelect: () => sendAuto(v, 'sms') },
           { label: 'Open in my WhatsApp', icon: 'chat', hidden: v.votingStatus !== 'ISSUED', onSelect: () => sendOnWhatsapp(v) },
+          { label: 'Open in my SMS', icon: 'sms', hidden: v.votingStatus !== 'ISSUED', onSelect: () => sendOnMySms(v) },
           { label: 'Copy message with link', icon: 'content_copy', hidden: v.votingStatus !== 'ISSUED', onSelect: () => copyLink(v) },
           { label: 'Issue new link', icon: 'refresh', hidden: v.votingStatus !== 'ISSUED' && v.votingStatus !== 'REVOKED', disabled: isLocked, onSelect: () => replace(v) },
           { label: 'Edit details', icon: 'edit', disabled: isLocked, onSelect: () => setFormVoter(v) },
@@ -334,7 +352,7 @@ export function VotersPage() {
 
       <VoterFormModal open={formVoter !== undefined} voter={formVoter} onClose={() => setFormVoter(undefined)} onSuccess={(m) => toast({ title: m, variant: 'success' })} />
       <ImportVotersModal open={importOpen} onClose={() => setImportOpen(false)} />
-      <WhatsappQueueModal open={whatsappOpen} onClose={() => setWhatsappOpen(false)} electionTitle={election?.title} endTime={election?.endTime} />
+      <WhatsappQueueModal open={whatsappOpen} onClose={() => setWhatsappOpen(false)} electionTitle={election?.title} startTime={election?.startTime} endTime={election?.endTime} />
     </>
   );
 }
