@@ -4,7 +4,7 @@
  *   npx ts-node prisma/seed-demo.ts
  */
 import { PrismaClient } from '@prisma/client';
-import { generateOpaqueToken, hashToken } from '../src/lib/tokens';
+import { generateVotingToken, hashToken } from '../src/lib/tokens';
 import { encryptToken } from '../src/lib/crypto';
 import 'dotenv/config';
 
@@ -69,7 +69,7 @@ async function main() {
       },
     });
     if (i < 34) {
-      const raw = generateOpaqueToken();
+      const raw = generateVotingToken();
       await prisma.votingToken.create({ data: { electionId: election.id, voterId: voter.id, tokenHash: hashToken(raw), tokenEncrypted: encryptToken(raw), issuedById: admin.id } });
       links.push(`http://localhost:5173/vote/${raw}`);
     }

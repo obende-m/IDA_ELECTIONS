@@ -6,6 +6,8 @@ import { writeAuditLog } from '../../lib/audit';
 import * as voterService from './voter.service';
 import { importVoters } from './voter.import';
 import { actorFromRequest } from '../../lib/actor';
+import { getWhatsappConfig, whatsappMode } from '../../lib/whatsapp';
+import { getSmsConfig } from '../../lib/sms';
 import type { CreateVoterInput, ListVotersQuery, UpdateVoterInput } from './voter.validation';
 
 export async function list(req: Request, res: Response) {
@@ -155,4 +157,21 @@ export async function exportVotingLinksCsv(req: Request, res: Response) {
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename="voting-links.csv"');
   res.send(csv);
+}
+
+/** Tells the admin UI which automatic channels are configured. No secrets. */
+export function messagingStatus(_req: Request, res: Response) {
+  res.json({ mode: whatsappMode(getWhatsappConfig()), sms: getSmsConfig() !== null });
+}
+
+export async function sendWhatsapp(req: Request, res: Response) {
+  const election = await getCurrentElection();
+  const result = await voterService.sendInviteToVoter('WHATSAPP', election, req.params.id, actorFromRequest(req), req);
+  res.status(201).json(result);
+}
+
+export async function sendSms(req: Request, res: Response) {
+  const election = await getCurrentElection();
+  const result = await voterService.sendInviteToVoter('SMS', election, req.params.id, actorFromRequest(req), req);
+  res.status(201).json(result);
 }

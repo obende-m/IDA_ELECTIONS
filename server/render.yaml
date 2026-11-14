@@ -52,3 +52,25 @@ services:
         sync: false
       - key: SUPABASE_PHOTOS_BUCKET
         sync: false
+      - key: WHATSAPP_ENABLED
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_API_KEY_SID
+        sync: false
+      - key: TWILIO_API_KEY_SECRET
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
+      - key: TWILIO_INVITE_CONTENT_SID
+        sync: false
+      - key: PUBLIC_SERVER_URL
+        sync: false
+      - key: WHATSAPP_DEFAULT_COUNTRY_CODE
+        value: "234"
+      - key: SMS_ENABLED
+        sync: false
+      - key: TWILIO_SMS_FROM
+        sync: false

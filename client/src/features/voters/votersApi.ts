@@ -26,6 +26,11 @@ export const votersApi = {
   replaceToken: (id: string) => apiRequest<{ votingLink: string }>(`/voters/${id}/token/replace`, { method: 'POST' }),
   votingLink: (id: string) => apiRequest<{ votingLink: string }>(`/voters/${id}/token/link`),
   whatsappQueue: () => apiRequest<{ voters: WhatsappQueueVoter[] }>('/voters/whatsapp-queue'),
+  messagingStatus: () => apiRequest<{ mode: 'off' | 'sandbox' | 'template'; sms: boolean }>('/voters/messaging-status'),
+  sendWhatsapp: (id: string) =>
+    apiRequest<{ messageId: string; status: string; toNumber: string }>(`/voters/${id}/whatsapp`, { method: 'POST' }),
+  sendSms: (id: string) =>
+    apiRequest<{ messageId: string; status: string; toNumber: string }>(`/voters/${id}/sms`, { method: 'POST' }),
   import: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
