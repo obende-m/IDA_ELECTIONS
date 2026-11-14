@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActionMenu, Badge, Button, Card, DataTable, PageHeader, Pagination, SearchInput, Tabs, useConfirm, useToast, type DataTableColumn, type MenuItem } from '../../components/ui';
-import { useDeleteVoter, useIssueToken, useRevokeToken, useReplaceToken, useSetVoterActive, useVotersList } from '../../features/voters/useVoters';
+import { useDeleteVoter, useIssueToken, useRevokeToken, useMessagingStatus, useReplaceToken, useSendInvite, useSetVoterActive, useVotersList } from '../../features/voters/useVoters';
 import { votersApi } from '../../features/voters/votersApi';
 import { buildInviteMessage, whatsappUrl } from '../../features/voters/inviteMessage';
 import { WhatsappQueueModal } from '../../features/voters/WhatsappQueueModal';
@@ -61,6 +61,11 @@ export function VotersPage() {
   const issueToken = useIssueToken();
   const revokeToken = useRevokeToken();
   const replaceToken = useReplaceToken();
+  const sendInvite = useSendInvite();
+  const messaging = useMessagingStatus().data;
+  const whatsappAuto = messaging?.mode ?? 'off';
+  const smsAuto = messaging?.sms ?? false;
+  const [autoSending, setAutoSending] = useState<string | null>(null);
 
   const attempt = async (failureTitle: string, action: () => Promise<void>) => {
     try {
@@ -113,6 +118,23 @@ export function VotersPage() {
     } catch {
       tab?.close();
       toast({ title: 'Could not open WhatsApp', variant: 'error' });
+    }
+  };
+
+  /** Sends this member's link from the server (Twilio) by WhatsApp or SMS: no app window, nothing to tap. */
+  const sendAuto = async (v: Voter, channel: 'whatsapp' | 'sms') => {
+    if (autoSending) return;
+    const label = channel === 'sms' ? 'SMS' : 'WhatsApp';
+    const how = channel === 'sms' ? 'They will receive a text message with' : "The committee's WhatsApp number will message them";
+    if (!(await confirm({ title: `Send ${v.fullName}'s link by ${label}?`, message: `${how} their personal voting link now.`, confirmLabel: 'Send now' }))) return;
+    setAutoSending(v.id);
+    try {
+      const { toNumber } = await sendInvite.mutateAsync({ id: v.id, channel });
+      toast({ title: `${label} sent`, description: `Twilio accepted the message to ${v.fullName} (${toNumber}). Delivery can still fail; check Twilio's logs if it doesn't arrive.`, variant: 'success' });
+    } catch (err) {
+      toast({ title: `${label} not sent`, description: err instanceof Error ? err.message : undefined, variant: 'error' });
+    } finally {
+      setAutoSending(null);
     }
   };
 
@@ -193,7 +215,9 @@ export function VotersPage() {
       render: (v) => {
         const items: MenuItem[] = [
           { label: 'Issue voting link', icon: 'link', hidden: v.votingStatus !== 'NOT_ISSUED', disabled: isLocked || !v.isActive, onSelect: () => issue(v) },
-          { label: 'Send on WhatsApp', icon: 'chat', hidden: v.votingStatus !== 'ISSUED', onSelect: () => sendOnWhatsapp(v) },
+          { label: whatsappAuto === 'sandbox' ? 'Send automatically (WhatsApp test)' : 'Send automatically on WhatsApp', icon: 'send', hidden: v.votingStatus !== 'ISSUED' || whatsappAuto === 'off', disabled: isLocked || autoSending !== null, onSelect: () => sendAuto(v, 'whatsapp') },
+          { label: 'Send by SMS', icon: 'send', hidden: v.votingStatus !== 'ISSUED' || !smsAuto, disabled: isLocked || autoSending !== null, onSelect: () => sendAuto(v, 'sms') },
+          { label: 'Open in my WhatsApp', icon: 'chat', hidden: v.votingStatus !== 'ISSUED', onSelect: () => sendOnWhatsapp(v) },
           { label: 'Copy message with link', icon: 'content_copy', hidden: v.votingStatus !== 'ISSUED', onSelect: () => copyLink(v) },
           { label: 'Issue new link', icon: 'refresh', hidden: v.votingStatus !== 'ISSUED' && v.votingStatus !== 'REVOKED', disabled: isLocked, onSelect: () => replace(v) },
           { label: 'Edit details', icon: 'edit', disabled: isLocked, onSelect: () => setFormVoter(v) },

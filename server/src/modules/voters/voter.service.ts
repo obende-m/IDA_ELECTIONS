@@ -1,11 +1,13 @@
 import type { Prisma, Voter, VotingToken } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { AppError } from '../../middleware/errorHandler';
-import { generateOpaqueToken, hashToken } from '../../lib/tokens';
+import { generateVotingToken, hashToken } from '../../lib/tokens';
 import { encryptToken, decryptToken } from '../../lib/crypto';
 import { writeAuditLog } from '../../lib/audit';
 import { assertElectionNotLocked } from '../../lib/electionLock';
 import type { Actor } from '../../lib/actor';
+import { getWhatsappConfig, sendWhatsappInvite, toE164, whatsappMode, TwilioSendError } from '../../lib/whatsapp';
+import { getSmsConfig, sendSmsInvite } from '../../lib/sms';
 import type { CreateVoterInput, ListVotersQuery, UpdateVoterInput } from './voter.validation';
 
 export type { Actor };
@@ -213,7 +215,7 @@ async function createTokenRow(
   issuedById: string,
   replacesTokenId?: string
 ): Promise<{ token: VotingToken; rawToken: string }> {
-  const rawToken = generateOpaqueToken();
+  const rawToken = generateVotingToken();
   const token = await db.votingToken.create({
     data: {
       electionId,
@@ -533,4 +535,108 @@ export async function resolveVotingToken(rawToken: string, req?: import('express
     membershipNumber: token.voter.membershipNumber,
     status: token.status,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Automatic sending through Twilio (WhatsApp or SMS)
+// ---------------------------------------------------------------------------
+
+export type InviteChannel = 'WHATSAPP' | 'SMS';
+
+export interface InviteSendOutcome {
+  messageId: string;
+  status: string;
+  toNumber: string;
+}
+
+const CHANNEL_LABEL: Record<InviteChannel, string> = { WHATSAPP: 'WhatsApp', SMS: 'SMS' };
+
+/**
+ * Sends one voter their current (ISSUED) voting link on WhatsApp or SMS through Twilio, and records
+ * the attempt in MessageLog + AuditLog. Neither record holds the message text or the link. Failures
+ * are recorded too, then surfaced as an AppError with Twilio's error code so the admin can act on it.
+ */
+export async function sendInviteToVoter(
+  channel: InviteChannel,
+  election: { id: string; title: string; endTime: Date | null },
+  voterId: string,
+  actor: Actor,
+  req?: import('express').Request
+): Promise<InviteSendOutcome> {
+  const label = CHANNEL_LABEL[channel];
+  const whatsappConfig = channel === 'WHATSAPP' ? getWhatsappConfig() : null;
+  const smsConfig = channel === 'SMS' ? getSmsConfig() : null;
+  if (!whatsappConfig && !smsConfig) throw new AppError(`Automatic ${label} sending is not set up on the server.`, 503);
+
+  await assertElectionNotLocked(election.id);
+  const voter = await getVoter(election.id, voterId);
+  if (!voter.isActive) throw new AppError('This voter is inactive.', 400);
+  if (voter.votingStatus === 'VOTED') throw new AppError('This voter has already voted.', 400);
+
+  const token = await prisma.votingToken.findFirst({ where: { voterId: voter.id, status: 'ISSUED' } });
+  if (!token) throw new AppError('This voter has no active voting link. Issue one first.', 400);
+
+  const toNumber = toE164(voter.phone);
+  if (!toNumber) throw new AppError(`${voter.fullName} has no usable phone number. Add it under Edit details.`, 400);
+
+  const rawToken = decryptToken(token.tokenEncrypted);
+  const details = { fullName: voter.fullName, electionTitle: election.title, endTime: election.endTime, rawToken, votingLink: votingLinkFor(rawToken) };
+  const auditBase = {
+    actorId: actor.id,
+    actorRole: actor.role,
+    actorName: actor.fullName,
+    targetType: 'VOTER',
+    targetId: voter.id,
+    electionId: election.id,
+    req,
+  };
+  const logBase = { electionId: election.id, voterId: voter.id, tokenId: token.id, channel, toNumber, sentById: actor.id };
+
+  try {
+    const result = whatsappConfig ? await sendWhatsappInvite(whatsappConfig, toNumber, details) : await sendSmsInvite(smsConfig!, toNumber, details);
+    const log = await prisma.messageLog.create({ data: { ...logBase, providerSid: result.sid, status: result.status } });
+    await writeAuditLog({
+      ...auditBase,
+      action: `${channel}_INVITE_SENT`,
+      metadata: { tokenId: token.id, messageLogId: log.id, providerSid: result.sid, ...(whatsappConfig ? { mode: whatsappMode(whatsappConfig) } : {}) },
+    });
+    return { messageId: log.id, status: result.status, toNumber };
+  } catch (err) {
+    if (!(err instanceof TwilioSendError)) throw err;
+    const log = await prisma.messageLog.create({ data: { ...logBase, status: 'failed', errorCode: err.code, errorMessage: err.message.slice(0, 500) } });
+    await writeAuditLog({ ...auditBase, action: `${channel}_INVITE_FAILED`, metadata: { tokenId: token.id, messageLogId: log.id, errorCode: err.code } });
+    // Account-level problems (KYC, suspended account) come back as 20003 too; Twilio's own text is the useful part there.
+    const hint = /compliance profile|KYC|Trust Hub/i.test(err.message)
+      ? 'Twilio has not approved the account owner verification (KYC) yet. Complete it in the Twilio Console > Trust Hub, then try again.'
+      : twilioErrorHint(channel, err.code);
+    throw new AppError(`${label} could not send to ${voter.fullName}${err.code ? ` (Twilio error ${err.code})` : ''}. ${hint}`, 502);
+  }
+}
+
+/** Plain-language next step for the Twilio error codes an admin is most likely to hit. */
+function twilioErrorHint(channel: InviteChannel, code: string | null): string {
+  switch (code) {
+    case '21654':
+    case '63015':
+    case '63016':
+      return 'In the Sandbox, the recipient must have messaged the sandbox number in the last 24 hours. In production, the approved template must be used.';
+    case '63003':
+    case '63024':
+      return 'The number may not be on WhatsApp. Send the link another way (Copy message).';
+    case '21211':
+    case '21614':
+      return 'The phone number looks invalid or is not a mobile number. Check it under Edit details.';
+    case '21408':
+      return 'Twilio is not allowed to send to this country yet. Enable it in the Twilio Console > Messaging > Settings > Geo permissions.';
+    case '21612':
+      return 'Twilio cannot route this message from the configured sender. Check TWILIO_SMS_FROM (a name of up to 11 letters/digits).';
+    case '21610':
+      return 'This number has opted out of messages from this sender.';
+    case '20003':
+      return "The server's Twilio credentials were rejected. Check the TWILIO_* settings.";
+    case '63007':
+      return 'The WhatsApp sender number is not set up correctly (TWILIO_WHATSAPP_FROM).';
+    default:
+      return channel === 'SMS' ? 'Check the Twilio Console > Monitor > Logs > Messaging for details.' : 'Check the Twilio Console > Monitor > Logs for details.';
+  }
 }

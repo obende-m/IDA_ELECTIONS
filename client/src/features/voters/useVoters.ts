@@ -66,3 +66,15 @@ export function useImportVoters() {
   const invalidate = useInvalidateVoters();
   return useMutation({ mutationFn: (file: File) => votersApi.import(file), onSuccess: invalidate });
 }
+
+/** Which channels the server can send on automatically (Twilio). WhatsApp 'off' / sms false hides that action. */
+export function useMessagingStatus() {
+  return useQuery({ queryKey: [VOTERS_KEY, 'messaging-status'], queryFn: () => votersApi.messagingStatus(), staleTime: 5 * 60_000 });
+}
+
+export function useSendInvite() {
+  return useMutation({
+    mutationFn: ({ id, channel }: { id: string; channel: 'whatsapp' | 'sms' }) =>
+      channel === 'sms' ? votersApi.sendSms(id) : votersApi.sendWhatsapp(id),
+  });
+}

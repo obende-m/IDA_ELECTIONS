@@ -20,6 +20,7 @@ router.post('/import', uploadSpreadsheet.single('file'), asyncHandler(voterContr
 router.get('/export', asyncHandler(voterController.exportVotersCsv));
 router.get('/export/links', asyncHandler(voterController.exportVotingLinksCsv));
 router.get('/whatsapp-queue', asyncHandler(voterController.whatsappQueue));
+router.get('/messaging-status', voterController.messagingStatus);
 router.get('/:id', asyncHandler(voterController.getOne));
 router.patch('/:id', validateBody(updateVoterSchema), asyncHandler(voterController.update));
 // Only succeeds while the voter has never had a token issued — see voter.service.ts's deleteVoter.
@@ -30,5 +31,8 @@ router.get('/:id/token/link', asyncHandler(voterController.votingLink));
 router.post('/:id/token/issue', asyncHandler(voterController.issueToken));
 router.post('/:id/token/revoke', asyncHandler(voterController.revokeToken));
 router.post('/:id/token/replace', asyncHandler(voterController.replaceToken));
+// Sends this voter's current link on WhatsApp through Twilio (see lib/whatsapp.ts).
+router.post('/:id/whatsapp', asyncHandler(voterController.sendWhatsapp));
+router.post('/:id/sms', asyncHandler(voterController.sendSms));
 
 export default router;

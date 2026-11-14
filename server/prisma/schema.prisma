@@ -55,6 +55,7 @@ model User {
   tokensRevoked           VotingToken[] @relation("TokenRevokedBy")
   electionsLocked         Election[]    @relation("ElectionLockedBy")
   electionsUnlocked       Election[]    @relation("ElectionUnlockedBy")
+  messagesSent            MessageLog[]  @relation("MessageSentBy")
 
   @@map("users")
 }
@@ -101,6 +102,7 @@ model Election {
   votes            Vote[]
   auditLogs        AuditLog[]
   candidateTallies CandidateTally[]
+  messageLogs      MessageLog[]
   positionTallies  PositionTally[]
   tally            ElectionTally?
   activityBuckets  ActivityBucket[]
@@ -163,6 +165,7 @@ model Voter {
 
   tokens           VotingToken[]
   votes            Vote[]
+  messageLogs      MessageLog[]
 
   @@unique([electionId, membershipNumber])
   @@index([electionId, votingStatus])
@@ -198,10 +201,37 @@ model VotingToken {
   replacesTokenId String?      @unique
   replacesToken   VotingToken? @relation("TokenChain", fields: [replacesTokenId], references: [id])
   replacedBy      VotingToken? @relation("TokenChain")
+  messageLogs     MessageLog[]
 
   @@index([voterId])
   @@index([electionId, status])
   @@map("voting_tokens")
+}
+
+// One row per automatic message sent to a voter (WhatsApp via Twilio). Deliberately never stores
+// the message text: it carries the voter's live voting link. `status` mirrors Twilio's message
+// status (queued, sent, delivered, read, failed, undelivered) and is updated by the status webhook.
+model MessageLog {
+  id           String       @id @default(uuid())
+  electionId   String
+  election     Election     @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  voterId      String
+  voter        Voter        @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  tokenId      String?      // the voting link this message carried
+  token        VotingToken? @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  channel      String       // WHATSAPP
+  toNumber     String       // E.164, as sent (the voter's phone may be edited later)
+  providerSid  String?      @unique // Twilio message SID; null when Twilio rejected the request outright
+  status       String
+  errorCode    String?
+  errorMessage String?
+  sentById     String?
+  sentBy       User?        @relation("MessageSentBy", fields: [sentById], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([electionId, voterId])
+  @@map("message_logs")
 }
 
 // OPEN BALLOT with controlled access: individual vote records are traceable to the voter who
