@@ -20,10 +20,32 @@ export function formatVotingTime(value?: string | null): string | null {
   return d ? d.toLocaleString('en-NG', { dateStyle: 'full', timeStyle: 'short', timeZone: TIME_ZONE }) : null;
 }
 
-/** "20 Nov 09:00": compact form for SMS. */
-function formatShort(value?: string | null): string | null {
+/** { day: "20 Nov", time: "09:00" } in Lagos time: compact pieces for SMS. */
+function shortParts(value?: string | null): { day: string; time: string } | null {
   const d = toDate(value);
-  return d ? d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TIME_ZONE }) : null;
+  if (!d) return null;
+  return {
+    day: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: TIME_ZONE }),
+    time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TIME_ZONE }),
+  };
+}
+
+/**
+ * Both voting times in as few characters as possible:
+ * same day  → "Voting 20 Nov, 09:00-17:00."
+ * two days  → "Opens 20 Nov 09:00, closes 21 Nov 17:00."
+ */
+function shortVotingWindow(startTime?: string | null, endTime?: string | null): string {
+  const opens = shortParts(startTime);
+  const closes = shortParts(endTime);
+  if (opens && closes) {
+    return opens.day === closes.day
+      ? `Voting ${opens.day}, ${opens.time}-${closes.time}.`
+      : `Opens ${opens.day} ${opens.time}, closes ${closes.day} ${closes.time}.`;
+  }
+  if (opens) return `Opens ${opens.day} ${opens.time}.`;
+  if (closes) return `Closes ${closes.day} ${closes.time}.`;
+  return '';
 }
 
 /** One SMS part holds 160 plain characters. */
@@ -102,17 +124,15 @@ export function buildInviteMessage({ fullName, votingLink, electionTitle, startT
 export function buildShortSmsMessage({ fullName, votingLink, startTime, endTime }: InviteDetails): string {
   // Plain letters only, so the phone doesn't switch to the 70-character Unicode mode.
   const firstName = (fullName.trim().split(/\s+/)[0] || 'Member').normalize('NFKD').replace(/[^\x20-\x7E]/g, '') || 'Member';
-  const opens = formatShort(startTime);
-  const closes = formatShort(endTime);
-  const footer = (withCloses: boolean) =>
-    [opens && `Opens ${opens}.`, withCloses && closes && `Closes ${closes}.`, 'Do not share.'].filter(Boolean).join(' ');
+  // Opening AND closing times are always included; to stay in one part we shorten the greeting instead.
+  const times = shortVotingWindow(startTime, endTime);
+  const footer = [times, 'Do not share.'].filter(Boolean).join(' ');
 
-  const full = `Dear ${firstName}, your IDA voting link:\n${votingLink}\n${footer(true)}`;
+  const full = `Dear ${firstName}, your IDA voting link:\n${votingLink}\n${footer}`;
   const onePart = [
     full,
-    `Dear ${firstName}, your IDA voting link:\n${votingLink}\n${footer(false)}`,
-    `${firstName}, your IDA voting link:\n${votingLink}\n${footer(false)}`,
-    `Your IDA voting link:\n${votingLink}\n${footer(false)}`,
+    `${firstName}, your IDA voting link:\n${votingLink}\n${footer}`,
+    `Your IDA voting link:\n${votingLink}\n${footer}`,
   ];
   // Older, longer links can't fit in one part whatever we cut, so send the full wording in two.
   return onePart.find((t) => t.length <= SMS_ONE_PART) ?? full;
