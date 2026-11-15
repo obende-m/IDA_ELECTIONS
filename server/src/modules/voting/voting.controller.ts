@@ -21,3 +21,8 @@ export async function listVoteRecords(req: Request, res: Response) {
   await votingService.logVoteRecordsAccess(election.id, actorFromRequest(req), query, req);
   res.json(result);
 }
+
+export async function verifyReceipt(req: Request, res: Response) {
+  const election = await getCurrentElection();
+  res.json(await votingService.verifyReceipt(election.id, String(req.params.reference), actorFromRequest(req), req));
+}

@@ -18,3 +18,7 @@ export const voteRecordsQuerySchema = z.object({
 });
 
 export type VoteRecordsQuery = z.infer<typeof voteRecordsQuerySchema>;
+
+export const receiptParamsSchema = z.object({
+  reference: z.string().trim().min(4, 'Enter the full reference number.').max(60),
+});

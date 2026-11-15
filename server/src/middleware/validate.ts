@@ -25,3 +25,14 @@ export function validateQuery(schema: ZodType) {
     next();
   };
 }
+
+/** Validates URL parameters (e.g. /receipts/:reference) against `schema`. */
+export function validateParams(schema: ZodType) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    const result = schema.safeParse(req.params);
+    if (!result.success) {
+      return next(new AppError(result.error.issues[0]?.message ?? 'Invalid request', 400));
+    }
+    next();
+  };
+}

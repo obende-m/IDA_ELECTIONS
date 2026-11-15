@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Badge, Card, DataTable, PageHeader, Pagination, SearchInput, type DataTableColumn } from '../../components/ui';
 import { RestrictedNotice, SensitiveNote } from '../../components/AdminNotices';
 import { useVoteRecords } from '../../features/voteRecords/useVoteRecords';
+import { ReceiptChecker } from '../../features/voteRecords/ReceiptChecker';
 import { useAuth } from '../../features/auth/AuthContext';
 import { useDebounced } from '../../lib/useDebounced';
 import type { VoteRecord } from '../../features/voteRecords/types';
@@ -48,9 +49,10 @@ export function VoteRecordsPage() {
       <SensitiveNote icon="visibility">
         This screen shows who voted for whom. Each time it loads, a permanent audit entry records your name, role, time, IP address and browser — by design.
       </SensitiveNote>
+      <ReceiptChecker onShowChoices={setSearch} />
       <Card className="overflow-hidden">
         <div className="px-5 sm:px-6 py-4 border-b border-outline-variant">
-          <SearchInput value={search} onChange={setSearch} label="Search vote records" placeholder="Voter name or membership no.…" className="max-w-md" />
+          <SearchInput value={search} onChange={setSearch} label="Search vote records" placeholder="Voter name, membership no. or reference…" className="max-w-md" />
         </div>
         <DataTable columns={columns} rows={data?.records ?? []} rowKey={(r) => r.id} label="Individual vote records" emptyMessage="No vote records match your search." isLoading={isLoading} error={isError ? error : undefined} onRetry={() => refetch()} />
         <Pagination page={page} totalPages={totalPages} summary={total === 0 ? 'No records' : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total} records`} onPageChange={setPage} />

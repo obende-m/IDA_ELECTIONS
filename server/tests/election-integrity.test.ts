@@ -339,3 +339,36 @@ test('link accounting: generated / used / awaiting / voided / re-issued add up',
   );
   assert.equal(links!.generated, links!.used + links!.awaiting + links!.voided);
 });
+
+test('receipt check: a genuine reference is found however it is typed, a fake one is not, and every check is audited', async () => {
+  const { election, position, candidates } = await makeElection();
+  const { voter, rawToken } = await makeVoterWithLink(election.id, 1);
+  const { referenceNumber } = await votingService.castVote(rawToken, { selections: [{ positionId: position.id, candidateIds: [candidates[0].id] }] });
+
+  const typedSloppily = referenceNumber.toLowerCase().replace(/-/g, ' ');
+  const found = await votingService.verifyReceipt(election.id, typedSloppily, actor());
+  assert.equal(found.found, true);
+  assert.equal(found.referenceNumber, referenceNumber);
+  assert.equal(found.voter?.membershipNumber, voter.membershipNumber);
+  assert.equal(found.election?.id, election.id);
+  assert.equal(found.contestsVoted, 1);
+  assert.equal(found.contestsAbstained, 0);
+  assert.equal(found.linkHistory?.length, 1);
+  assert.equal(found.linkHistory?.[0].status, 'CONSUMED');
+  assert.ok(found.linkHistory?.[0].usedAt, 'the link records when it was used');
+  assert.ok(!('candidate' in found) && !JSON.stringify(found).includes(candidates[0].id), 'the receipt check never reveals the choices');
+
+  const fake = await votingService.verifyReceipt(election.id, 'IDA-AAAA-BBBB-CCCC', actor());
+  assert.equal(fake.found, false);
+  assert.equal(fake.voter, undefined);
+
+  const audits = await prisma.auditLog.findMany({ where: { actorId: actorUser.id, action: { in: ['RECEIPT_VERIFIED', 'RECEIPT_NOT_FOUND'] }, timestamp: { gte: new Date(Date.now() - 60_000) } } });
+  assert.ok(audits.some((a) => a.action === 'RECEIPT_VERIFIED' && (a.metadata as { referenceNumber?: string }).referenceNumber === referenceNumber));
+  assert.ok(audits.some((a) => a.action === 'RECEIPT_NOT_FOUND'));
+
+  const byReference = await votingService.listVoteRecords(election.id, { search: typedSloppily, page: 1, pageSize: 25 });
+  assert.equal(byReference.total, 1);
+  assert.equal(byReference.records[0].referenceNumber, referenceNumber);
+  const byPart = await votingService.listVoteRecords(election.id, { search: referenceNumber.slice(4, 13), page: 1, pageSize: 25 });
+  assert.equal(byPart.total, 1, 'part of a reference, with its dash, also finds the ballot');
+});

@@ -194,16 +194,17 @@ export async function castVote(rawToken: string, input: CastVoteInput, req?: imp
 // ---------------------------------------------------------------------------
 
 export async function listVoteRecords(electionId: string, query: VoteRecordsQuery) {
+  const reference = query.search ? normalizeReference(query.search) : '';
   const where = {
     electionId,
     ...(query.search
       ? {
-          voter: {
-            OR: [
-              { fullName: { contains: query.search, mode: 'insensitive' as const } },
-              { membershipNumber: { contains: query.search, mode: 'insensitive' as const } },
-            ],
-          },
+          OR: [
+            { voter: { fullName: { contains: query.search, mode: 'insensitive' as const } } },
+            { voter: { membershipNumber: { contains: query.search, mode: 'insensitive' as const } } },
+            // A full or partial receipt number, typed with or without dashes/spaces.
+            ...(reference.length >= 4 ? [{ referenceNumber: { contains: reference } }] : []),
+          ],
         }
       : {}),
   };
@@ -237,6 +238,97 @@ export async function listVoteRecords(electionId: string, query: VoteRecordsQuer
     page: query.page,
     pageSize: query.pageSize,
   };
+}
+
+/**
+ * Receipt numbers as voters read them out: any case, spaces or missing dashes. "ida 7kq4m2xp9hta"
+ * becomes "IDA-7KQ4-M2XP-9HTA"; anything that isn't a whole receipt is returned upper-cased with
+ * spaces removed, so partial searches still work.
+ */
+export function normalizeReference(input: string): string {
+  const compact = input.toUpperCase().replace(/[\s\-_.]/g, '');
+  const whole = compact.match(/^([A-Z]{2,10}?)([A-Z0-9]{4})([A-Z0-9]{4})([A-Z0-9]{4})$/);
+  if (whole) return `${whole[1]}-${whole[2]}-${whole[3]}-${whole[4]}`;
+  return input.toUpperCase().replace(/\s+/g, '');
+}
+
+export interface ReceiptCheck {
+  found: boolean;
+  referenceNumber: string;
+  election?: { id: string; title: string; year: number; isCurrent: boolean };
+  voter?: { fullName: string; membershipNumber: string };
+  castAt?: Date;
+  contestsVoted?: number;
+  contestsAbstained?: number;
+  /** Every voting link this voter was given in that election, oldest first. */
+  linkHistory?: {
+    status: string;
+    issuedAt: Date;
+    firstOpenedAt: Date | null;
+    usedAt: Date | null;
+    revokedAt: Date | null;
+    usedForThisBallot: boolean;
+  }[];
+}
+
+/**
+ * "Is this receipt genuine?" for the committee settling a dispute. Says whether a ballot with this
+ * reference exists, whose it is, when it was cast and the voter's link history, but never the choices:
+ * those stay on the Vote Records screen. Every check is audit-logged, found or not.
+ */
+export async function verifyReceipt(currentElectionId: string, rawReference: string, actor: Actor, req?: import('express').Request): Promise<ReceiptCheck> {
+  const referenceNumber = normalizeReference(rawReference);
+  const votes = await prisma.vote.findMany({
+    where: { referenceNumber },
+    select: { electionId: true, voterId: true, positionId: true, castAt: true },
+  });
+
+  let result: ReceiptCheck = { found: false, referenceNumber };
+  if (votes.length > 0) {
+    const { electionId, voterId } = votes[0];
+    const castAt = votes.reduce((min, v) => (v.castAt < min ? v.castAt : min), votes[0].castAt);
+    const [election, voter, positionCount, tokens] = await Promise.all([
+      prisma.election.findUniqueOrThrow({ where: { id: electionId }, select: { id: true, title: true, year: true } }),
+      prisma.voter.findUniqueOrThrow({ where: { id: voterId }, select: { fullName: true, membershipNumber: true } }),
+      prisma.position.count({ where: { electionId } }),
+      prisma.votingToken.findMany({
+        where: { voterId, electionId },
+        orderBy: { issuedAt: 'asc' },
+        select: { status: true, issuedAt: true, firstAccessedAt: true, consumedAt: true, revokedAt: true },
+      }),
+    ]);
+    const contestsVoted = new Set(votes.map((v) => v.positionId)).size;
+    result = {
+      found: true,
+      referenceNumber,
+      election: { ...election, isCurrent: election.id === currentElectionId },
+      voter,
+      castAt,
+      contestsVoted,
+      contestsAbstained: Math.max(0, positionCount - contestsVoted),
+      linkHistory: tokens.map((t) => ({
+        status: t.status,
+        issuedAt: t.issuedAt,
+        firstOpenedAt: t.firstAccessedAt,
+        usedAt: t.consumedAt,
+        revokedAt: t.revokedAt,
+        usedForThisBallot: t.status === 'CONSUMED',
+      })),
+    };
+  }
+
+  await writeAuditLog({
+    action: result.found ? 'RECEIPT_VERIFIED' : 'RECEIPT_NOT_FOUND',
+    actorId: actor.id,
+    actorRole: actor.role,
+    actorName: actor.fullName,
+    targetType: 'VOTE_RECEIPT',
+    electionId: result.election?.id ?? currentElectionId,
+    metadata: { referenceNumber, ...(rawReference.trim() !== referenceNumber ? { typed: rawReference.trim().slice(0, 60) } : {}) },
+    req,
+  });
+
+  return result;
 }
 
 export async function logVoteRecordsAccess(
