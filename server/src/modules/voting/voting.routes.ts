@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import * as votingController from './voting.controller';
-import { validateBody, validateQuery } from '../../middleware/validate';
+import { validateBody, validateParams, validateQuery } from '../../middleware/validate';
 import { requireAuth, requireRole } from '../../middleware/auth.middleware';
 import { votingTokenLimiter } from '../../middleware/rateLimiter';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { castVoteSchema, voteRecordsQuerySchema } from './voting.validation';
+import { castVoteSchema, receiptParamsSchema, voteRecordsQuerySchema } from './voting.validation';
 
 const router = Router();
 
@@ -19,6 +19,15 @@ router.get(
   requireRole('ELECTION_COMMITTEE'),
   validateQuery(voteRecordsQuerySchema),
   asyncHandler(votingController.listVoteRecords)
+);
+
+// Receipt check for disputes: is this reference genuine, whose is it, what happened to their link. Never the choices.
+router.get(
+  '/receipts/:reference',
+  requireAuth,
+  requireRole('ELECTION_COMMITTEE'),
+  validateParams(receiptParamsSchema),
+  asyncHandler(votingController.verifyReceipt)
 );
 
 export default router;

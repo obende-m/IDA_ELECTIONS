@@ -67,7 +67,7 @@ after(async () => {
 });
 
 test('unauthenticated requests to every admin area are rejected', async () => {
-  for (const path of ['/elections/current', '/voters', '/candidates', '/positions', '/results', '/audit', '/users', '/voting/records', '/reports/summary/csv']) {
+  for (const path of ['/elections/current', '/voters', '/candidates', '/positions', '/results', '/audit', '/users', '/voting/records', '/voting/receipts/IDA-AAAA-BBBB-CCCC', '/reports/summary/csv']) {
     assert.equal((await api(path)).status, 401, `${path} should require auth`);
   }
 });
@@ -90,6 +90,7 @@ test('privilege boundaries: ADMIN < ELECTION_COMMITTEE < SUPER_ADMIN', async () 
   assert.equal((await api('/voters', { token: admin })).status, 200);
   assert.equal((await api('/users', { token: admin })).status, 403);
   assert.equal((await api('/voting/records', { token: admin })).status, 403);
+  assert.equal((await api('/voting/receipts/IDA-AAAA-BBBB-CCCC', { token: admin })).status, 403, 'an Admin cannot check receipts');
   assert.equal((await api('/elections/current/open', { method: 'POST', token: admin })).status, 403);
   assert.equal((await api('/elections/current/close', { method: 'POST', token: admin })).status, 403);
   assert.equal((await api('/elections/current/archive', { method: 'POST', token: admin })).status, 403);
@@ -98,6 +99,8 @@ test('privilege boundaries: ADMIN < ELECTION_COMMITTEE < SUPER_ADMIN', async () 
   assert.equal((await api('/results/reconcile', { method: 'POST', token: admin })).status, 403);
 
   assert.equal((await api('/voting/records', { token: committee })).status, 200);
+  assert.equal((await api('/voting/receipts/IDA-AAAA-BBBB-CCCC', { token: committee })).status, 200);
+  assert.equal((await api('/voting/receipts/IDA-AAAA-BBBB-CCCC', { token: superAdmin })).status, 200);
   assert.equal((await api('/users', { token: committee })).status, 403);
   assert.equal((await api('/elections/current/unlock', { method: 'POST', token: committee, body: { reason: 'not allowed to unlock' } })).status, 403);
   assert.equal((await api('/elections/current/archive', { method: 'POST', token: committee })).status, 403, 'only a Super Admin can archive');

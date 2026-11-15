@@ -1,5 +1,5 @@
 import { apiRequest } from '../../lib/apiClient';
-import type { VoteRecordsQuery, VoteRecordsResult } from './types';
+import type { ReceiptCheck, VoteRecordsQuery, VoteRecordsResult } from './types';
 
 function buildQueryString(query: VoteRecordsQuery): string {
   const params = new URLSearchParams();
@@ -12,4 +12,6 @@ function buildQueryString(query: VoteRecordsQuery): string {
 
 export const voteRecordsApi = {
   list: (query: VoteRecordsQuery) => apiRequest<VoteRecordsResult>(`/voting/records${buildQueryString(query)}`),
+  /** Every check is audit-logged on the server, found or not. */
+  checkReceipt: (reference: string) => apiRequest<ReceiptCheck>(`/voting/receipts/${encodeURIComponent(reference.trim())}`),
 };
