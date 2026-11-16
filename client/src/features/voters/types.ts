@@ -10,6 +10,9 @@ export interface Voter {
   ward: string | null;
   isActive: boolean;
   votingStatus: VotingStatus;
+  /** When the current link actually went out (Twilio accepted it, or the admin confirmed sending it from their phone). Null = not sent yet. */
+  linkSentAt: string | null;
+  linkSentVia: 'SMS' | 'MY_SMS' | 'WHATSAPP' | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +36,8 @@ export interface VoterListQuery {
   search?: string;
   status?: 'active' | 'inactive' | 'all';
   votingStatus?: VotingStatus;
+  /** Live link holders only: 'yes' = link sent, 'no' = not sent yet. */
+  sent?: 'yes' | 'no';
   page?: number;
   pageSize?: number;
 }

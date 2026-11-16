@@ -73,8 +73,17 @@ export function useMessagingStatus() {
 }
 
 export function useSendInvite() {
+  const invalidate = useInvalidateVoters();
   return useMutation({
     mutationFn: ({ id, channel }: { id: string; channel: 'whatsapp' | 'sms' }) =>
       channel === 'sms' ? votersApi.sendSms(id) : votersApi.sendWhatsapp(id),
+    // A sent message flips the row to "Link sent"; a failed one is logged too, so refresh either way.
+    onSettled: invalidate,
   });
+}
+
+/** The admin confirms they sent the link from their own phone's SMS app. */
+export function useMarkSentFromMyPhone() {
+  const invalidate = useInvalidateVoters();
+  return useMutation({ mutationFn: (id: string) => votersApi.markSentFromMyPhone(id), onSuccess: invalidate });
 }

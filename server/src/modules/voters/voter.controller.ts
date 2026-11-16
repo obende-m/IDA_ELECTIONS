@@ -170,6 +170,13 @@ export async function sendWhatsapp(req: Request, res: Response) {
   res.status(201).json(result);
 }
 
+/** The admin confirms they sent this voter's link from their own phone's SMS app. */
+export async function markSentFromOwnPhone(req: Request, res: Response) {
+  const election = await getCurrentElection();
+  const result = await voterService.markSentFromOwnPhone(election, req.params.id, actorFromRequest(req), req);
+  res.status(201).json(result);
+}
+
 export async function sendSms(req: Request, res: Response) {
   const election = await getCurrentElection();
   const result = await voterService.sendInviteToVoter('SMS', election, req.params.id, actorFromRequest(req), req);

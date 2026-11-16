@@ -15,6 +15,8 @@ export const listVotersQuerySchema = z.object({
   search: z.string().trim().optional(),
   status: z.enum(['active', 'inactive', 'all']).optional().default('all'),
   votingStatus: z.enum(['NOT_ISSUED', 'ISSUED', 'VOTED', 'REVOKED']).optional(),
+  // Live link holders only: 'yes' = the current link has actually been sent, 'no' = not sent yet.
+  sent: z.enum(['yes', 'no']).optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(200).optional().default(25),
 });
