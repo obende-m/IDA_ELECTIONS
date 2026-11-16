@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import type { Response } from 'express';
-import { linkStatRows, type ElectionSummaryReport, type PositionResultsReport, type ParticipationReport, type AuditReport } from './report.service';
+import { linkStatRows, type ParticipationReport, type AuditReport } from './report.service';
 
 /**
  * Hand-drawn PDFs via PDFKit vector primitives — no Chromium/native-canvas dependency, no
@@ -107,64 +107,6 @@ function candidateBar(doc: PDFKit.PDFDocument, name: string, voteCount: number, 
   doc.rect(PAGE_MARGIN, barY, barMaxWidth, 8).fillColor('#eae7e7').fill();
   doc.rect(PAGE_MARGIN, barY, Math.max(2, (pct / 100) * barMaxWidth), 8).fillColor(isWinner ? GOLD : INK).fill();
   doc.y = barY + 18;
-}
-
-function ruleLine(doc: PDFKit.PDFDocument) {
-  doc
-    .moveTo(PAGE_MARGIN, doc.y)
-    .lineTo(doc.page.width - PAGE_MARGIN, doc.y)
-    .lineWidth(0.5)
-    .strokeColor(RULE)
-    .stroke();
-  doc.moveDown(0.5);
-}
-
-export function renderElectionSummaryPdf(report: ElectionSummaryReport, res: Response) {
-  const doc = newDocument(res, 'election-summary.pdf');
-  addHeader(doc, 'Election Summary', report.analytics.election.title);
-
-  statRow(doc, 'Election Status', report.analytics.election.status);
-  statRow(doc, 'Duration', report.durationLabel);
-  statRow(doc, 'Registered Voters', report.analytics.registeredVoters.toLocaleString());
-  statRow(doc, 'Ballots Cast', report.analytics.ballotsCast.toLocaleString());
-  statRow(doc, 'Abstained Voters', report.analytics.abstainedVoters.toLocaleString());
-  statRow(doc, 'Turnout', `${report.analytics.turnoutPct}%`);
-  if (report.certificationLabel) statRow(doc, 'Certification', report.certificationLabel);
-
-  for (const position of report.analytics.positions) {
-    sectionTitle(doc, position.title);
-    statRow(doc, 'Abstentions', position.abstentions.toLocaleString());
-    doc.moveDown(0.3);
-    for (const candidate of position.candidates) {
-      candidateBar(doc, candidate.name, candidate.voteCount, candidate.pct, candidate.id === position.winner?.id && candidate.voteCount > 0);
-    }
-    if (position.winner && position.winner.voteCount > 0) {
-      doc.fillColor(SECONDARY).font('Helvetica-Oblique').fontSize(9).text(`Winner: ${position.winner.name}${position.runnerUp && position.runnerUp.voteCount > 0 ? `  ·  Runner-up: ${position.runnerUp.name}` : ''}`);
-    }
-    ruleLine(doc);
-  }
-
-  addFooters(doc);
-  doc.end();
-}
-
-export function renderPositionResultsPdf(report: PositionResultsReport, res: Response) {
-  const doc = newDocument(res, 'position-results.pdf');
-  addHeader(doc, 'Position Results', report.election.title);
-
-  for (const position of report.positions) {
-    sectionTitle(doc, position.title);
-    statRow(doc, 'Maximum Selections', String(position.maxSelections));
-    statRow(doc, 'Abstentions', position.abstentions.toLocaleString());
-    doc.moveDown(0.3);
-    for (const candidate of position.candidates) {
-      candidateBar(doc, candidate.name, candidate.voteCount, candidate.pct, candidate.id === position.winner?.id && candidate.voteCount > 0);
-    }
-    ruleLine(doc);
-  }
-
-  addFooters(doc);
-  doc.end();
 }
 
 export function renderParticipationPdf(report: ParticipationReport, res: Response) {

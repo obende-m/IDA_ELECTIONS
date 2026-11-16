@@ -39,11 +39,24 @@ export async function buildElectionSummary(electionId: string): Promise<Election
 export interface PositionResultsReport {
   election: ElectionAnalytics['election'];
   positions: ElectionAnalytics['positions'];
+  registeredVoters: number;
+  ballotsCast: number;
+  abstainedVoters: number;
+  turnoutPct: number;
+  certifiedAt: string | null;
 }
 
 export async function buildPositionResults(electionId: string): Promise<PositionResultsReport> {
   const analytics = await getElectionAnalytics(electionId);
-  return { election: analytics.election, positions: analytics.positions };
+  return {
+    election: analytics.election,
+    positions: analytics.positions,
+    registeredVoters: analytics.registeredVoters,
+    ballotsCast: analytics.ballotsCast,
+    abstainedVoters: analytics.abstainedVoters,
+    turnoutPct: analytics.turnoutPct,
+    certifiedAt: analytics.certifiedAt,
+  };
 }
 
 export interface ParticipationReport {

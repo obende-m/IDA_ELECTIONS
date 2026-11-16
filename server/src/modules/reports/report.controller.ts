@@ -6,6 +6,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { toCsv } from '../../lib/csv';
 import * as reportService from './report.service';
 import * as reportPdf from './report.pdf';
+import { renderResultsPdf } from './results.pdf';
 import * as reportExcel from './report.excel';
 
 type ReportType = 'summary' | 'positions' | 'participation' | 'audit';
@@ -72,7 +73,16 @@ export async function download(req: Request, res: Response) {
   switch (type) {
     case 'summary': {
       const report = await reportService.buildElectionSummary(election.id);
-      if (format === 'pdf') return reportPdf.renderElectionSummaryPdf(report, res);
+      if (format === 'pdf') {
+        const { analytics } = report;
+        const details: [string, string][] = [
+          ['Election status', analytics.election.status.charAt(0) + analytics.election.status.slice(1).toLowerCase()],
+          ['Voting lasted', report.durationLabel],
+          ['Did not vote', analytics.abstainedVoters.toLocaleString('en-NG')],
+          ...(analytics.links ? ([['Voting links used', `${analytics.links.used.toLocaleString('en-NG')} of ${analytics.links.generated.toLocaleString('en-NG')}`]] as [string, string][]) : []),
+        ];
+        return await renderResultsPdf({ ...analytics, details }, res, { filename: 'election-summary.pdf', title: 'Election Summary' });
+      }
       if (format === 'xlsx') return sendExcel(res, 'election-summary.xlsx', await reportExcel.renderElectionSummaryExcel(report));
       const stats = toCsv(
         [
@@ -94,7 +104,7 @@ export async function download(req: Request, res: Response) {
     }
     case 'positions': {
       const report = await reportService.buildPositionResults(election.id);
-      if (format === 'pdf') return reportPdf.renderPositionResultsPdf(report, res);
+      if (format === 'pdf') return await renderResultsPdf(report, res, { filename: 'position-results.pdf', title: 'Official Election Results' });
       if (format === 'xlsx') return sendExcel(res, 'position-results.xlsx', await reportExcel.renderPositionResultsExcel(report));
       return sendCsv(res, 'position-results.csv', positionResultsCsv(report.positions));
     }
