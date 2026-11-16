@@ -1,23 +1,39 @@
 import { useEffect, useState } from 'react';
 import { ActionMenu, Badge, Button, Card, DataTable, PageHeader, Pagination, SearchInput, Tabs, useConfirm, useToast, type DataTableColumn, type MenuItem } from '../../components/ui';
-import { useDeleteVoter, useIssueToken, useRevokeToken, useMessagingStatus, useReplaceToken, useSendInvite, useSetVoterActive, useVotersList } from '../../features/voters/useVoters';
+import { useDeleteVoter, useIssueToken, useMarkSentFromMyPhone, useRevokeToken, useMessagingStatus, useReplaceToken, useSendInvite, useSetVoterActive, useVotersList } from '../../features/voters/useVoters';
 import { votersApi } from '../../features/voters/votersApi';
-import { buildInviteMessage, buildShortSmsMessage, smsUrl, whatsappUrl } from '../../features/voters/inviteMessage';
-import { WhatsappQueueModal } from '../../features/voters/WhatsappQueueModal';
+import { buildInviteMessage, buildShortSmsMessage, smsUrl } from '../../features/voters/inviteMessage';
 import { VoterFormModal } from '../../features/voters/VoterFormModal';
 import { ImportVotersModal } from '../../features/voters/ImportVotersModal';
 import { useCurrentElection } from '../../features/elections/useElection';
 import { LockBanner } from '../../features/elections/LockBanner';
-import type { Voter, VotingStatus } from '../../features/voters/types';
+import type { Voter } from '../../features/voters/types';
 
-const STATUS: Record<VotingStatus, { label: string; variant: 'neutral' | 'gold' | 'success' | 'error' | 'teal' }> = {
-  NOT_ISSUED: { label: 'No link', variant: 'neutral' },
-  ISSUED: { label: 'Link sent', variant: 'gold' },
-  VOTED: { label: 'Voted', variant: 'success' },
-  REVOKED: { label: 'Revoked', variant: 'error' },
-};
+type BadgeVariant = 'neutral' | 'gold' | 'success' | 'error' | 'teal';
 
-type Tab = 'all' | VotingStatus | 'inactive';
+/** A link only counts as "sent" once it actually went out (Twilio accepted it, or the admin confirmed sending it from their phone). */
+function statusOf(v: Voter): { label: string; variant: BadgeVariant } {
+  switch (v.votingStatus) {
+    case 'NOT_ISSUED':
+      return { label: 'No link', variant: 'neutral' };
+    case 'ISSUED':
+      return v.linkSentAt ? { label: 'Link sent', variant: 'gold' } : { label: 'Not sent yet', variant: 'teal' };
+    case 'VOTED':
+      return { label: 'Voted', variant: 'success' };
+    case 'REVOKED':
+      return { label: 'Revoked', variant: 'error' };
+  }
+}
+
+const SENT_VIA: Record<NonNullable<Voter['linkSentVia']>, string> = { SMS: 'by SMS', MY_SMS: 'from my phone', WHATSAPP: 'by WhatsApp' };
+
+function sentNote(v: Voter): string | null {
+  if (v.votingStatus !== 'ISSUED' || !v.linkSentAt || !v.linkSentVia) return null;
+  const when = new Date(v.linkSentAt).toLocaleString('en-NG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Africa/Lagos' });
+  return `${SENT_VIA[v.linkSentVia]} · ${when}`;
+}
+
+type Tab = 'all' | 'NOT_ISSUED' | 'NOT_SENT' | 'SENT' | 'VOTED' | 'REVOKED' | 'inactive';
 const PAGE_SIZE = 20;
 
 /** Debounce a fast-changing value (search box) so we don't refetch on every keystroke. */
@@ -39,7 +55,6 @@ export function VotersPage() {
   const [page, setPage] = useState(1);
   const [formVoter, setFormVoter] = useState<Voter | null | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
-  const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [exporting, setExporting] = useState<'voters' | 'links' | null>(null);
 
   useEffect(() => setPage(1), [debouncedSearch, tab]);
@@ -47,7 +62,8 @@ export function VotersPage() {
   const query = {
     search: debouncedSearch || undefined,
     status: tab === 'inactive' ? ('inactive' as const) : ('all' as const),
-    votingStatus: tab !== 'all' && tab !== 'inactive' ? tab : undefined,
+    votingStatus: tab === 'NOT_ISSUED' || tab === 'VOTED' || tab === 'REVOKED' ? tab : undefined,
+    sent: tab === 'SENT' ? ('yes' as const) : tab === 'NOT_SENT' ? ('no' as const) : undefined,
     page,
     pageSize: PAGE_SIZE,
   };
@@ -62,8 +78,8 @@ export function VotersPage() {
   const revokeToken = useRevokeToken();
   const replaceToken = useReplaceToken();
   const sendInvite = useSendInvite();
+  const markSentFromMyPhone = useMarkSentFromMyPhone();
   const messaging = useMessagingStatus().data;
-  const whatsappAuto = messaging?.mode ?? 'off';
   const smsAuto = messaging?.sms ?? false;
   const [autoSending, setAutoSending] = useState<string | null>(null);
 
@@ -101,27 +117,10 @@ export function VotersPage() {
     }
   };
 
-  /** Opens WhatsApp on this member's chat with the message and link already typed. */
-  const sendOnWhatsapp = async (v: Voter) => {
-    if (!whatsappUrl(v.phone, '')) {
-      toast({ title: 'No usable phone number', description: `Add ${v.fullName}'s WhatsApp number (Edit details), then try again.`, variant: 'error' });
-      return;
-    }
-    // Open the tab inside the click (browsers block pop-ups opened after a wait), then point it at WhatsApp once the link is fetched.
-    const tab = window.open('', 'ida-whatsapp');
-    try {
-      const { votingLink } = await votersApi.votingLink(v.id);
-      const url = whatsappUrl(v.phone, buildInviteMessage({ fullName: v.fullName, votingLink, electionTitle: election?.title, startTime: election?.startTime, endTime: election?.endTime }));
-      if (!url) throw new Error('bad number');
-      if (tab) tab.location.href = url;
-      else window.location.assign(url);
-    } catch {
-      tab?.close();
-      toast({ title: 'Could not open WhatsApp', variant: 'error' });
-    }
-  };
-
-  /** Opens this phone's Messages app on the member's number with the message and link already typed: just tap Send. */
+  /**
+   * Opens this phone's Messages app on the member's number with the message and link already typed.
+   * The site can't see whether Send was tapped, so it asks afterwards; only "Yes" marks the link as sent.
+   */
   const sendOnMySms = async (v: Voter) => {
     if (!smsUrl(v.phone, '')) {
       toast({ title: 'No usable phone number', description: `Add ${v.fullName}'s phone number (Edit details), then try again.`, variant: 'error' });
@@ -135,21 +134,37 @@ export function VotersPage() {
       window.location.href = url;
     } catch {
       toast({ title: 'Could not open Messages', variant: 'error' });
+      return;
     }
+    // Waiting here for when the admin comes back from the Messages app.
+    const sent = await confirm({
+      title: `Did the SMS to ${v.fullName} go?`,
+      message: 'Choose "Yes, I sent it" only if you tapped Send in your Messages app. Their row will then show "Link sent".',
+      confirmLabel: 'Yes, I sent it',
+      cancelLabel: 'Not yet',
+    });
+    if (!sent) return;
+    await attempt('Could not mark as sent', async () => {
+      await markSentFromMyPhone.mutateAsync(v.id);
+      toast({ title: 'Marked as sent', description: `${v.fullName}'s link was sent from your phone.`, variant: 'success' });
+    });
   };
 
-  /** Sends this member's link from the server (Twilio) by WhatsApp or SMS: no app window, nothing to tap. */
-  const sendAuto = async (v: Voter, channel: 'whatsapp' | 'sms') => {
+  /** Sends this member's link by SMS from the server (Twilio): no app to open, nothing to tap. */
+  const sendSms = async (v: Voter) => {
     if (autoSending) return;
-    const label = channel === 'sms' ? 'SMS' : 'WhatsApp';
-    const how = channel === 'sms' ? 'They will receive a text message with' : "The committee's WhatsApp number will message them";
-    if (!(await confirm({ title: `Send ${v.fullName}'s link by ${label}?`, message: `${how} their personal voting link now.`, confirmLabel: 'Send now' }))) return;
+    if (!smsAuto) {
+      toast({ title: 'Automatic SMS is not set up', description: 'Use "Open in my SMS" from the row menu to send it from your own phone instead.', variant: 'error' });
+      return;
+    }
+    const again = v.linkSentAt ? ` Their link was already sent ${sentNote(v)}; this sends it again.` : '';
+    if (!(await confirm({ title: `Send ${v.fullName}'s link by SMS?`, message: `They will receive a text message with their personal voting link now.${again}`, confirmLabel: 'Send now' }))) return;
     setAutoSending(v.id);
     try {
-      const { toNumber } = await sendInvite.mutateAsync({ id: v.id, channel });
-      toast({ title: `${label} sent`, description: `Twilio accepted the message to ${v.fullName} (${toNumber}). Delivery can still fail; check Twilio's logs if it doesn't arrive.`, variant: 'success' });
+      const { toNumber } = await sendInvite.mutateAsync({ id: v.id, channel: 'sms' });
+      toast({ title: 'SMS sent', description: `Twilio accepted the message to ${v.fullName} (${toNumber}). Delivery can still fail; check Twilio's logs if it doesn't arrive.`, variant: 'success' });
     } catch (err) {
-      toast({ title: `${label} not sent`, description: err instanceof Error ? err.message : undefined, variant: 'error' });
+      toast({ title: 'SMS not sent', description: err instanceof Error ? err.message : undefined, variant: 'error' });
     } finally {
       setAutoSending(null);
     }
@@ -158,7 +173,7 @@ export function VotersPage() {
   const issue = (v: Voter) =>
     attempt('Could not issue link', async () => {
       await issueToken.mutateAsync(v.id);
-      toast({ title: 'Voting link issued', description: `Copy it from the row menu to send to ${v.fullName}.`, variant: 'success' });
+      toast({ title: 'Voting link issued', description: `Now tap Send SMS to send it to ${v.fullName}.`, variant: 'success' });
     });
 
   const replace = async (v: Voter) => {
@@ -216,14 +231,21 @@ export function VotersPage() {
       key: 'status',
       header: 'Voting',
       sortValue: (v) => v.votingStatus,
-      render: (v) => (
-        <div className="flex flex-wrap gap-1.5">
-          <Badge variant={STATUS[v.votingStatus].variant} dot>
-            {STATUS[v.votingStatus].label}
-          </Badge>
-          {!v.isActive && <Badge variant="outline">Inactive</Badge>}
-        </div>
-      ),
+      render: (v) => {
+        const s = statusOf(v);
+        const note = sentNote(v);
+        return (
+          <div>
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant={s.variant} dot>
+                {s.label}
+              </Badge>
+              {!v.isActive && <Badge variant="outline">Inactive</Badge>}
+            </div>
+            {note && <p className="mt-1 text-[0.75rem] text-secondary">{note}</p>}
+          </div>
+        );
+      },
     },
     {
       key: 'actions',
@@ -232,10 +254,8 @@ export function VotersPage() {
       render: (v) => {
         const items: MenuItem[] = [
           { label: 'Issue voting link', icon: 'link', hidden: v.votingStatus !== 'NOT_ISSUED', disabled: isLocked || !v.isActive, onSelect: () => issue(v) },
-          { label: whatsappAuto === 'sandbox' ? 'Send automatically (WhatsApp test)' : 'Send automatically on WhatsApp', icon: 'send', hidden: v.votingStatus !== 'ISSUED' || whatsappAuto === 'off', disabled: isLocked || autoSending !== null, onSelect: () => sendAuto(v, 'whatsapp') },
-          { label: 'Send by SMS', icon: 'send', hidden: v.votingStatus !== 'ISSUED' || !smsAuto, disabled: isLocked || autoSending !== null, onSelect: () => sendAuto(v, 'sms') },
-          { label: 'Open in my WhatsApp', icon: 'chat', hidden: v.votingStatus !== 'ISSUED', onSelect: () => sendOnWhatsapp(v) },
-          { label: 'Open in my SMS', icon: 'sms', hidden: v.votingStatus !== 'ISSUED', onSelect: () => sendOnMySms(v) },
+          { label: v.linkSentAt ? 'Send SMS again' : 'Send SMS', icon: 'send', hidden: v.votingStatus !== 'ISSUED' || !smsAuto, disabled: isLocked || autoSending !== null, onSelect: () => sendSms(v) },
+          { label: 'Open in my SMS', icon: 'sms', hidden: v.votingStatus !== 'ISSUED', disabled: isLocked, onSelect: () => sendOnMySms(v) },
           { label: 'Copy message with link', icon: 'content_copy', hidden: v.votingStatus !== 'ISSUED', onSelect: () => copyLink(v) },
           { label: 'Issue new link', icon: 'refresh', hidden: v.votingStatus !== 'ISSUED' && v.votingStatus !== 'REVOKED', disabled: isLocked, onSelect: () => replace(v) },
           { label: 'Edit details', icon: 'edit', disabled: isLocked, onSelect: () => setFormVoter(v) },
@@ -248,10 +268,11 @@ export function VotersPage() {
             {v.votingStatus === 'ISSUED' && (
               <button
                 type="button"
-                onClick={() => sendOnWhatsapp(v)}
-                className="hidden sm:inline-flex h-8 px-2.5 rounded-lg text-[0.8125rem] font-medium text-primary hover:bg-primary-soft items-center gap-1"
+                disabled={isLocked || autoSending !== null}
+                onClick={() => sendSms(v)}
+                className="hidden sm:inline-flex h-8 px-2.5 rounded-lg text-[0.8125rem] font-medium text-primary hover:bg-primary-soft items-center gap-1 disabled:opacity-40"
               >
-                WhatsApp
+                {autoSending === v.id ? 'Sending…' : v.linkSentAt ? 'Send again' : 'Send SMS'}
               </button>
             )}
             {v.votingStatus === 'ISSUED' && (
@@ -292,9 +313,6 @@ export function VotersPage() {
         description="The voter roll for this election, and each member's private voting link."
         actions={
           <>
-            <Button variant="secondary" leftIcon="chat" onClick={() => setWhatsappOpen(true)}>
-              Send on WhatsApp
-            </Button>
             <Button variant="secondary" leftIcon="upload_file" disabled={isLocked} onClick={() => setImportOpen(true)}>
               Import
             </Button>
@@ -314,7 +332,8 @@ export function VotersPage() {
             items={[
               { value: 'all', label: 'All' },
               { value: 'NOT_ISSUED', label: 'No link' },
-              { value: 'ISSUED', label: 'Link sent' },
+              { value: 'NOT_SENT', label: 'Not sent yet' },
+              { value: 'SENT', label: 'Link sent' },
               { value: 'VOTED', label: 'Voted' },
               { value: 'REVOKED', label: 'Revoked' },
               { value: 'inactive', label: 'Inactive' },
@@ -352,7 +371,6 @@ export function VotersPage() {
 
       <VoterFormModal open={formVoter !== undefined} voter={formVoter} onClose={() => setFormVoter(undefined)} onSuccess={(m) => toast({ title: m, variant: 'success' })} />
       <ImportVotersModal open={importOpen} onClose={() => setImportOpen(false)} />
-      <WhatsappQueueModal open={whatsappOpen} onClose={() => setWhatsappOpen(false)} electionTitle={election?.title} startTime={election?.startTime} endTime={election?.endTime} />
     </>
   );
 }

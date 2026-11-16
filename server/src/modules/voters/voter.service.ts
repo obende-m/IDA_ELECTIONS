@@ -22,12 +22,29 @@ function votingLinkFor(rawToken: string): string {
 // Voter CRUD
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// "Link sent": only true once the voter's CURRENT link has actually gone out, either accepted by
+// Twilio (SMS/WHATSAPP rows) or confirmed by the admin after sending from their own phone (MY_SMS).
+// Issuing a link alone does not count. A Twilio message that later fails no longer counts.
+// ---------------------------------------------------------------------------
+
+const NOT_DELIVERED = ['failed', 'undelivered'];
+const deliveredLog: Prisma.MessageLogWhereInput = { status: { notIn: NOT_DELIVERED } };
+const sentLiveToken: Prisma.VotingTokenWhereInput = { status: 'ISSUED', messageLogs: { some: deliveredLog } };
+
+function sentFilter(sent: ListVotersQuery['sent']): Prisma.VoterWhereInput {
+  if (sent === 'yes') return { votingStatus: 'ISSUED', tokens: { some: sentLiveToken } };
+  if (sent === 'no') return { votingStatus: 'ISSUED', tokens: { none: sentLiveToken } };
+  return {};
+}
+
 export async function listVoters(electionId: string, query: ListVotersQuery) {
   const where: Prisma.VoterWhereInput = {
     electionId,
     ...(query.status === 'active' ? { isActive: true } : {}),
     ...(query.status === 'inactive' ? { isActive: false } : {}),
     ...(query.votingStatus ? { votingStatus: query.votingStatus } : {}),
+    ...sentFilter(query.sent),
     ...(query.search
       ? {
           OR: [
@@ -46,10 +63,25 @@ export async function listVoters(electionId: string, query: ListVotersQuery) {
       orderBy: { createdAt: 'desc' },
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
+      include: {
+        tokens: {
+          where: { status: 'ISSUED' },
+          take: 1,
+          select: { messageLogs: { where: deliveredLog, orderBy: { createdAt: 'desc' }, take: 1, select: { channel: true, createdAt: true } } },
+        },
+      },
     }),
   ]);
 
-  return { voters, total, page: query.page, pageSize: query.pageSize };
+  return {
+    voters: voters.map(({ tokens, ...voter }) => {
+      const sent = tokens[0]?.messageLogs[0];
+      return { ...voter, linkSentAt: sent?.createdAt ?? null, linkSentVia: sent?.channel ?? null };
+    }),
+    total,
+    page: query.page,
+    pageSize: query.pageSize,
+  };
 }
 
 /** Full (unpaginated) roster for "Export voter list" — never includes token/link data. */
@@ -632,6 +664,47 @@ export async function sendInviteToVoter(
     const reason = err.code ? ` (Twilio error ${err.code})` : ` (${err.message.slice(0, 200)})`;
     throw new AppError(`${label} could not send to ${voter.fullName}${reason}. ${hint}`, 502);
   }
+}
+
+/**
+ * The admin sent this voter's current link from their own phone ("Open in my SMS") and confirmed
+ * it. Recorded as a MY_SMS MessageLog row (no text, no link) so the voter shows "Link sent".
+ */
+export async function markSentFromOwnPhone(
+  election: { id: string },
+  voterId: string,
+  actor: Actor,
+  req?: import('express').Request
+): Promise<{ linkSentAt: Date }> {
+  await assertElectionNotLocked(election.id);
+  const voter = await getVoter(election.id, voterId);
+  if (voter.votingStatus === 'VOTED') throw new AppError('This voter has already voted.', 400);
+  const token = await prisma.votingToken.findFirst({ where: { voterId: voter.id, status: 'ISSUED' } });
+  if (!token) throw new AppError('This voter has no active voting link. Issue one first.', 400);
+
+  const log = await prisma.messageLog.create({
+    data: {
+      electionId: election.id,
+      voterId: voter.id,
+      tokenId: token.id,
+      channel: 'MY_SMS',
+      toNumber: toE164(voter.phone) ?? voter.phone ?? '',
+      status: 'sent_by_admin',
+      sentById: actor.id,
+    },
+  });
+  await writeAuditLog({
+    actorId: actor.id,
+    actorRole: actor.role,
+    actorName: actor.fullName,
+    action: 'MY_SMS_INVITE_MARKED_SENT',
+    targetType: 'VOTER',
+    targetId: voter.id,
+    electionId: election.id,
+    metadata: { tokenId: token.id, messageLogId: log.id },
+    req,
+  });
+  return { linkSentAt: log.createdAt };
 }
 
 /** Plain-language next step for the Twilio error codes an admin is most likely to hit. */

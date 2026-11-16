@@ -269,3 +269,37 @@ test('the WhatsApp queue is admin-only, lists live links with phone numbers, and
   const audit = await prisma.auditLog.findFirst({ where: { action: 'VOTING_LINKS_WHATSAPP_QUEUE_OPENED', electionId: election.id } });
   assert.ok(audit, 'opening the queue is audited');
 });
+
+test('"Link sent" only shows once the current link actually went out (Twilio or confirmed from my phone)', async () => {
+  const admin = await login(emails.ADMIN);
+  type Row = { id: string; linkSentAt: string | null; linkSentVia: string | null };
+  const list = async (q: string) => ((await (await api(`/voters?pageSize=200${q}`, { token: admin })).json()) as { voters: Row[] }).voters;
+  const election = await prisma.election.findFirstOrThrow({ orderBy: { createdAt: 'desc' } });
+
+  const created = await api('/voters', { method: 'POST', token: admin, body: { membershipNumber: `SENT-${Date.now()}`, fullName: 'Sent Check', phone: '08012345678' } });
+  const voter = ((await created.json()) as { voter: { id: string } }).voter;
+  assert.equal((await api(`/voters/${voter.id}/sent-from-my-phone`, { method: 'POST', token: admin })).status, 400, 'no link yet, nothing to mark');
+
+  assert.equal((await api(`/voters/${voter.id}/token/issue`, { method: 'POST', token: admin })).status, 201);
+  let row = (await list('')).find((v) => v.id === voter.id)!;
+  assert.equal(row.linkSentAt, null, 'issuing a link is not sending it');
+  assert.ok((await list('&sent=no')).some((v) => v.id === voter.id));
+  assert.ok(!(await list('&sent=yes')).some((v) => v.id === voter.id));
+
+  // A Twilio attempt that failed does not count as sent.
+  const token = await prisma.votingToken.findFirstOrThrow({ where: { voterId: voter.id, status: 'ISSUED' } });
+  await prisma.messageLog.create({ data: { electionId: election.id, voterId: voter.id, tokenId: token.id, channel: 'SMS', toNumber: '+2348012345678', status: 'failed' } });
+  assert.equal((await list('')).find((v) => v.id === voter.id)!.linkSentAt, null);
+
+  assert.equal((await api(`/voters/${voter.id}/sent-from-my-phone`)).status, 401);
+  assert.equal((await api(`/voters/${voter.id}/sent-from-my-phone`, { method: 'POST', token: admin })).status, 201);
+  row = (await list('')).find((v) => v.id === voter.id)!;
+  assert.ok(row.linkSentAt, 'confirmed from my phone = sent');
+  assert.equal(row.linkSentVia, 'MY_SMS');
+  assert.ok((await list('&sent=yes')).some((v) => v.id === voter.id));
+  assert.ok(await prisma.auditLog.findFirst({ where: { action: 'MY_SMS_INVITE_MARKED_SENT', targetId: voter.id } }), 'audited');
+
+  // A replacement link has not been sent yet, even though the old one was.
+  assert.equal((await api(`/voters/${voter.id}/token/replace`, { method: 'POST', token: admin })).status, 201);
+  assert.equal((await list('')).find((v) => v.id === voter.id)!.linkSentAt, null);
+});

@@ -6,6 +6,7 @@ function buildQueryString(query: VoterListQuery): string {
   if (query.search) params.set('search', query.search);
   if (query.status) params.set('status', query.status);
   if (query.votingStatus) params.set('votingStatus', query.votingStatus);
+  if (query.sent) params.set('sent', query.sent);
   if (query.page) params.set('page', String(query.page));
   if (query.pageSize) params.set('pageSize', String(query.pageSize));
   const qs = params.toString();
@@ -31,6 +32,7 @@ export const votersApi = {
     apiRequest<{ messageId: string; status: string; toNumber: string }>(`/voters/${id}/whatsapp`, { method: 'POST' }),
   sendSms: (id: string) =>
     apiRequest<{ messageId: string; status: string; toNumber: string }>(`/voters/${id}/sms`, { method: 'POST' }),
+  markSentFromMyPhone: (id: string) => apiRequest<{ linkSentAt: string }>(`/voters/${id}/sent-from-my-phone`, { method: 'POST' }),
   import: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);

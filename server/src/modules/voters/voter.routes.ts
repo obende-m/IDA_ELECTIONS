@@ -34,5 +34,7 @@ router.post('/:id/token/replace', asyncHandler(voterController.replaceToken));
 // Sends this voter's current link on WhatsApp through Twilio (see lib/whatsapp.ts).
 router.post('/:id/whatsapp', asyncHandler(voterController.sendWhatsapp));
 router.post('/:id/sms', asyncHandler(voterController.sendSms));
+// The admin sent the link from their own phone (Open in my SMS) and confirms it went.
+router.post('/:id/sent-from-my-phone', asyncHandler(voterController.markSentFromOwnPhone));
 
 export default router;
