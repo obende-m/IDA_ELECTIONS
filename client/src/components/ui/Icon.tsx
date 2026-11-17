@@ -3,7 +3,7 @@ import {
   CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp, CircleDot, CircleSlash, Clock,
   CloudUpload, Copy, Eye, EyeOff, FileSpreadsheet, FileText, Filter, Gauge, History, Inbox, Info, Key, LayoutDashboard,
   Link2, Link2Off, ListChecks, Lock, LockKeyhole, LogOut, Mail, Menu, MessageCircle, MessageSquareText, MoreHorizontal, Pencil, Percent, Plus, PlusCircle,
-  Printer, RefreshCw, Scale, ScrollText, Search, Send, Settings, Shield, ShieldAlert, ShieldCheck, Siren, SlidersHorizontal,
+  Printer, RefreshCw, Scale, ScrollText, Search, Send, Settings, Shield, Share2, ShieldAlert, ShieldCheck, Siren, SlidersHorizontal,
   Sparkles, Timer, Trash2, Unlock, Upload, User, UserCog, UserPlus, UserRound, UserSearch, Users, Vote, WifiOff, X,
   type LucideIcon,
 } from 'lucide-react';
@@ -23,7 +23,7 @@ const ICONS: Record<string, LucideIcon> = {
   add: Plus, add_circle: PlusCircle, edit: Pencil, delete: Trash2, close: X, search: Search, refresh: RefreshCw,
   download: ArrowDownToLine, upload_file: Upload, cloud_upload: CloudUpload, content_copy: Copy, print: Printer, send: Send,
   link: Link2, link_off: Link2Off, mail: Mail, key: Key, group_add: UserPlus, filter: Filter, tune: SlidersHorizontal,
-  more: MoreHorizontal, unfold: ChevronsUpDown, chat: MessageCircle, sms: MessageSquareText,
+  more: MoreHorizontal, unfold: ChevronsUpDown, chat: MessageCircle, sms: MessageSquareText, share: Share2,
   // arrows
   chevron_right: ChevronRight, chevron_left: ChevronLeft, expand_more: ChevronDown, expand_less: ChevronUp,
   arrow_forward: ArrowRight, arrow_back: ArrowLeft, arrow_upward: ArrowUp,

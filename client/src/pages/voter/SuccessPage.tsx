@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Icon, useToast } from '../../components/ui';
 import { VoterShell } from '../../components/voter/VoterChrome';
 import { useVotingSession } from '../../features/voting/VotingSessionContext';
+import { VotedCard } from '../../features/voting/VotedCard';
 import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 
 /**
@@ -12,7 +13,7 @@ import { VotingLinkRequiredNotice } from './VotingLinkRequiredNotice';
 export function SuccessPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { referenceNumber, ballot, clearSession } = useVotingSession();
+  const { referenceNumber, ballot, session, clearSession } = useVotingSession();
   const [generatedAt] = useState(() => new Date());
 
   if (!referenceNumber) return <VotingLinkRequiredNotice />;
@@ -78,6 +79,8 @@ export function SuccessPage() {
           </div>
         </dl>
       </section>
+
+      <VotedCard fullName={session?.fullName ?? null} electionLabel={electionLabel} />
 
       <div className="no-print mt-8 flex flex-col sm:flex-row gap-3">
         <Button variant="secondary" size="lg" leftIcon="print" onClick={() => window.print()}>
